@@ -13,7 +13,7 @@
 from app.runtime.llm import LLM
 from common import logger
 
-from typing import List, Dict
+from typing import List, Dict, Union, Optional
 from http import HTTPStatus
 from zhipuai import ZhipuAI
 import os
@@ -28,7 +28,11 @@ class LLMChatGLM(LLM):
         super().__init__(api_key, base_url, model_name)
         self.client = ZhipuAI(api_key=api_key) 
 
-    def invoke(self, messages: str, stream: bool = False):
+    def invoke(self, 
+               messages: Union[str, List[Dict[str, str]]], 
+               tools : Optional[object] = None,  
+               stream: bool = False
+    ):
         response = self.client.chat.completions.create(
             model=self.model_name,
             messages=messages,
@@ -36,22 +40,26 @@ class LLMChatGLM(LLM):
             top_p=0.7,
             temperature=0.8,
             stream=stream,
-            tools=None
+            tools=tools
         )
 
         if stream:
             for chunk in response:
-                yield json.dumps({
-                    'role': chunk.choices[0].delta.role,
-                    'content': chunk.choices[0].delta.content
-                }, ensure_ascii=False)
+                delta = response.choices[0].delta
+                yield delta.model_dump()
+                # yield json.dumps({
+                #     'role': chunk.choices[0].delta.role,
+                #     'content': chunk.choices[0].delta.content
+                # }, ensure_ascii=False)
         else:
             message = response.choices[0].message
+            yield message.model_dump()
+
             # logger.info(f"{message.model_dump()}")
-            yield {
-                'role': message.role,
-                'content': message.content
-            }
+            # yield {
+            #     'role': message.role,
+            #     'content': message.content
+            # }
 
 if __name__ == "__main__":
     from setting import CHATGLM_API_KEY

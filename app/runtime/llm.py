@@ -9,6 +9,7 @@
 '''
 
 
+from typing import Optional, List, Dict, Union
 from abc import ABC, abstractmethod
 
 class LLM(ABC):
@@ -24,5 +25,9 @@ class LLM(ABC):
         self.model_name = model_name
 
     @abstractmethod
-    def invoke(self, messages: str, stream:bool = False):
+    def invoke(self, 
+               messages: Union[str, List[Dict[str, str]]], 
+               tools : Optional[object] = None,  
+               stream: bool = False
+    ):
         raise NotImplementedError

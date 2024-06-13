@@ -11,7 +11,7 @@
 
 from app.runtime.llm import LLM
 
-from typing import List, Dict
+from typing import List, Dict, Union, Optional
 from http import HTTPStatus
 import dashscope
 import os
@@ -25,9 +25,12 @@ class LLMQwen(LLM):
     ) -> None:
         super().__init__(api_key, base_url, model_name)
 
-    def invoke(self, messages: str, stream: bool = False):
+    def invoke(self, 
+               messages: Union[str, List[Dict[str, str]]], 
+               tools : Optional[object] = None,  
+               stream: bool = False
+    ):
         response = dashscope.Generation.call(
-            # dashscope.Generation.Models.qwen_max,
             model=self.model_name,
             api_key=self.api_key,
             messages=messages,
@@ -36,7 +39,7 @@ class LLMQwen(LLM):
             top_p=0.7,
             temperature=0.8,
             stream=stream,
-            tools=None,
+            tools=tools,
             incremental_output=True if stream else False  # 增量式流式输出
         )
 
