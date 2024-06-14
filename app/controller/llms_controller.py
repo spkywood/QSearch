@@ -11,6 +11,9 @@
 
 from typing import Annotated
 from fastapi import APIRouter, Body
+from fastapi.responses import StreamingResponse
+from sse_starlette.sse import EventSourceResponse
+
 
 from common import logger
 from db.schemas import ChatSession
@@ -19,15 +22,8 @@ from app.runtime import LLMChatGLM, LLMQwen
 from setting import CHATGLM_API_KEY, QWEN_API_KEY
 from tools.register import tools, dispatch_tool
 
-chatglm = LLMChatGLM(
-    api_key=CHATGLM_API_KEY,
-    model_name="glm-4",
-)
-
-qwen = LLMQwen(
-    api_key=QWEN_API_KEY,
-    model_name="qwen-max",
-)
+chatglm = LLMChatGLM(api_key=CHATGLM_API_KEY, model_name="glm-4")
+qwen = LLMQwen(api_key=QWEN_API_KEY, model_name="qwen-max")
 
 router = APIRouter()
 
@@ -49,26 +45,28 @@ async def create_chat(chat_sess: ChatSession):
     )
 
 @router.post("/chat/completions")
-async def completion(model: Annotated[str, Body(...)],
-                     question: Annotated[str, Body(...)],):
-    
+async def completion(
+    model: Annotated[str, Body(...)],
+    question: Annotated[str, Body(...)],
+    stream: Annotated[bool, Body(default=False)]
+):
+    """
+    大语言模型问答接口
+    """
     messages = [
         {'role': 'system', 'content': 'You are a helpful assistant.'},
         {'role': 'user', 'content': question}
     ]
     resp = chatglm.invoke(messages=messages)
 
-    result = None
-    logger.info(resp)
-    for i in resp:
-        logger.info(i)
-        result = i
-
-    return BaseResponse(
-        code=200,
-        message="success",
-        data=result
-    )
+    if stream:
+        return EventSourceResponse(resp)
+    else:
+        return BaseResponse(
+            code=200,
+            message="success",
+            data=resp
+        )
 
 @router.post("/chat/tools")
 async def chat_with_tools(
@@ -79,13 +77,9 @@ async def chat_with_tools(
         {'role': 'system', 'content': '不要假设或猜测传入函数的参数值。如果用户的描述不明确，请要求用户提供必要信息'},
         {'role': 'user', 'content': question}
     ]
-    resp = chatglm.invoke(messages=messages, tools=tools)
+    model_response = chatglm.invoke(messages=messages, tools=tools)
 
-    model_response = None
-    for i in resp:
-        model_response = i
-
-    if isinstance(model_response, dict) and  model_response.get('tool_calls'):
+    if isinstance(model_response, dict) and model_response.get('tool_calls'):
         tool_name = model_response['tool_calls'][0]['function']['name']
         kwargs = model_response['tool_calls'][0]['function']['arguments']
         
@@ -103,3 +97,18 @@ async def chat_with_tools(
         message="success",
         data=result
     )
+
+
+@router.post("/chat/sse/completions")
+async def sse_completions(
+    model: Annotated[str, Body(...)],
+    question: Annotated[str, Body(...)],
+    stream: Annotated[bool, Body(...)],
+):
+    messages = [
+        {'role': 'system', 'content': 'You are a helpful assistant.'},
+        {'role': 'user', 'content': question}
+    ]
+    resp = chatglm.invoke(messages=messages, stream=stream)
+
+    return EventSourceResponse(resp)

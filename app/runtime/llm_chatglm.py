@@ -46,15 +46,15 @@ class LLMChatGLM(LLM):
 
             if stream:
                 for chunk in response:
-                    delta = response.choices[0].delta
-                    yield delta.model_dump()
+                    delta = chunk.choices[0].delta
+                    yield json.dumps(delta.model_dump(), ensure_ascii=False)
             else:
                 message = response.choices[0].message
-                yield message.model_dump()
+                return message.model_dump()
 
         except Exception as e:
             logger.error(e)
-            yield "llm server connection error."
+            return "llm server connection error."
 
 if __name__ == "__main__":
     from setting import CHATGLM_API_KEY
