@@ -48,7 +48,7 @@ async def create_chat(chat_sess: ChatSession):
 async def completion(
     model: Annotated[str, Body(...)],
     question: Annotated[str, Body(...)],
-    stream: Annotated[bool, Body(default=False)]
+    stream: Annotated[bool, Body(...)]
 ):
     """
     大语言模型问答接口
