@@ -77,3 +77,8 @@ python startup.py
 - [RAGflow](https://github.com/infiniflow/ragflow)
 - [FastGPT](https://github.com/labring/FastGPT)
 - [MaxKB](https://github.com/1Panel-dev/MaxKB)
+
+## 学习
+
+![fastapi-best-practices](https://github.com/zhanymkanov/fastapi-best-practices)
+![fastapi-tips](https://github.com/Kludex/fastapi-tips)
