@@ -10,6 +10,7 @@
 
 
 import json
+import httpx
 import inspect
 from collections import OrderedDict
 from types import GenericAlias

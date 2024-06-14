@@ -33,33 +33,28 @@ class LLMChatGLM(LLM):
                tools : Optional[object] = None,  
                stream: bool = False
     ):
-        response = self.client.chat.completions.create(
-            model=self.model_name,
-            messages=messages,
-            max_tokens=2000,  # 设置最大令牌数为 100
-            top_p=0.7,
-            temperature=0.8,
-            stream=stream,
-            tools=tools
-        )
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model_name,
+                messages=messages,
+                max_tokens=2000,  # 设置最大令牌数为 100
+                top_p=0.7,
+                temperature=0.8,
+                stream=stream,
+                tools=tools
+            )
 
-        if stream:
-            for chunk in response:
-                delta = response.choices[0].delta
-                yield delta.model_dump()
-                # yield json.dumps({
-                #     'role': chunk.choices[0].delta.role,
-                #     'content': chunk.choices[0].delta.content
-                # }, ensure_ascii=False)
-        else:
-            message = response.choices[0].message
-            yield message.model_dump()
+            if stream:
+                for chunk in response:
+                    delta = response.choices[0].delta
+                    yield delta.model_dump()
+            else:
+                message = response.choices[0].message
+                yield message.model_dump()
 
-            # logger.info(f"{message.model_dump()}")
-            # yield {
-            #     'role': message.role,
-            #     'content': message.content
-            # }
+        except Exception as e:
+            logger.error(e)
+            yield "llm server connection error."
 
 if __name__ == "__main__":
     from setting import CHATGLM_API_KEY

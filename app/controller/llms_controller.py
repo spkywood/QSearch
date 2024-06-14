@@ -83,18 +83,23 @@ async def chat_with_tools(
 
     model_response = None
     for i in resp:
-        logger.info(i)
         model_response = i
 
-    if model_response.tool_calls:
+    if isinstance(model_response, dict) and  model_response.get('tool_calls'):
         tool_name = model_response['tool_calls'][0]['function']['name']
         kwargs = model_response['tool_calls'][0]['function']['arguments']
+        
+        code = 200
         result = dispatch_tool(tool_name, kwargs)
+    elif isinstance(model_response, str):
+        code = 500
+        result = model_response
     else:
+        code = 400
         result = "No tool called"
 
     return BaseResponse(
-        code=200,
+        code=code,
         message="success",
         data=result
     )

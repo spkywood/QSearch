@@ -6,3 +6,14 @@
 
 定义为 `OpenAPI` 风格函数;
 
+
+## httpx 请求封装调用
+
+需要注册：
+
+- url: 远程工具调用接口
+- method: 请求方法
+- headers: 请求头
+- params: 请求参数
+- data: 请求体
+
