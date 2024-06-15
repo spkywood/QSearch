@@ -5,7 +5,7 @@
 @Time    :   2024/06/11 13:57:53
 @Author  :   wangxh 
 @Version :   1.0
-@Email   :   wangxh@centn.com
+@Email   :   longfellow.wang@gmail.com
 '''
 
 
@@ -29,7 +29,14 @@ async def main():
 if __name__ == '__main__':
     import uvicorn
     app = create_app()
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    
+    uvicorn.run(
+        app, 
+        host="0.0.0.0", 
+        port=8000,
+        loop="uvloop",
+        http="httptools"
+    )
     
     # 异步 main 函数
     # import sys
