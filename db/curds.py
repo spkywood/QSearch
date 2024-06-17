@@ -18,8 +18,8 @@ from db.session import with_session
 from common import logger
 
 @with_session
-async def   add_user(session: AsyncSession, name, email, phone, password):
-    stmt = select(User).where(User.email == email)
+async def add_user(session: AsyncSession, name, email, phone, password):
+    stmt = select(User).where(User.name == name)
     query = await session.execute(stmt)
     user = query.scalar_one_or_none()
     if user is None:
@@ -58,6 +58,17 @@ async def query_user_with_email(session: AsyncSession, email: str) -> User:
     :return: 用户列表
     """
     query = await session.execute(select(User).where(User.email == email))
+    user = query.scalar_one_or_none()
+    
+    return user
+
+
+@with_session
+async def query_user_with_name(session: AsyncSession, name: str):
+    """
+    登陆接口
+    """
+    query = await session.execute(select(User).where(User.name == name))
     user = query.scalar_one_or_none()
     
     return user

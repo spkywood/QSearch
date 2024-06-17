@@ -20,9 +20,6 @@ class User(BaseTable):
     __tablename__ = "users"
 
     name: Mapped[str] = mapped_column(String(100), unique=True)
-    email: Mapped[str] = mapped_column(String(100), unique=True, index=True)
-    phone: Mapped[str] = mapped_column(String(100), unique=True)
+    email: Mapped[str] = mapped_column(String(100), nullable=True)
+    phone: Mapped[str] = mapped_column(String(100), nullable=True)
     password: Mapped[str] = mapped_column(String(500))
-    is_active = mapped_column(Boolean, default=True)
-
-    items = relationship("Item", back_populates="owner")
