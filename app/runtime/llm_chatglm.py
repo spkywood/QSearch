@@ -44,17 +44,35 @@ class LLMChatGLM(LLM):
                 tools=tools
             )
 
-            if stream:
-                for chunk in response:
-                    delta = chunk.choices[0].delta
-                    yield json.dumps(delta.model_dump(), ensure_ascii=False)
-            else:
-                message = response.choices[0].message
-                return message.model_dump()
-
+            message = response.choices[0].message
+            return message.model_dump()
         except Exception as e:
             logger.error(e)
             return "llm server connection error."
+        
+    def sse_invoke(self, 
+               messages: Union[str, List[Dict[str, str]]], 
+               tools : Optional[object] = None,  
+               stream: bool = True
+    ):
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model_name,
+                messages=messages,
+                max_tokens=2000,  # 设置最大令牌数为 100
+                top_p=0.7,
+                temperature=0.8,
+                stream=stream,
+                tools=tools
+            )
+
+            for chunk in response:
+                delta = chunk.choices[0].delta
+                yield json.dumps(delta.model_dump(), ensure_ascii=False)
+
+        except Exception as e:
+            logger.error(e)
+            yield "llm server connection error."
 
 if __name__ == "__main__":
     from setting import CHATGLM_API_KEY

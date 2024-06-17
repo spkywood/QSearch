@@ -47,8 +47,7 @@ async def create_chat(chat_sess: ChatSession):
 @router.post("/chat/completions")
 async def completion(
     model: Annotated[str, Body(...)],
-    question: Annotated[str, Body(...)],
-    stream: Annotated[bool, Body(...)]
+    question: Annotated[str, Body(...)]
 ):
     """
     大语言模型问答接口
@@ -59,25 +58,69 @@ async def completion(
     ]
     resp = chatglm.invoke(messages=messages)
 
-    if stream:
-        return EventSourceResponse(resp)
-    else:
-        return BaseResponse(
-            code=200,
-            message="success",
-            data=resp
-        )
+    return BaseResponse(
+        code=200,
+        message="success",
+        data=resp
+    )
+
+@router.post("/sse/chat/completions")
+async def sse_completion(
+    model: Annotated[str, Body(...)],
+    question: Annotated[str, Body(...)],
+    stream: Annotated[bool, Body(...)]
+):
+    """
+    大语言模型问答接口
+    """
+    messages = [
+        {'role': 'system', 'content': 'You are a helpful assistant.'},
+        {'role': 'user', 'content': question}
+    ]
+
+    return EventSourceResponse(chatglm.sse_invoke(messages=messages))
+  
 
 @router.post("/chat/tools")
 async def chat_with_tools(
     model: Annotated[str, Body(...)],
-    question: Annotated[str, Body(...)],
+    question: Annotated[str, Body(...)]
 ):
     messages = [
         {'role': 'system', 'content': '不要假设或猜测传入函数的参数值。如果用户的描述不明确，请要求用户提供必要信息'},
         {'role': 'user', 'content': question}
     ]
-    model_response = chatglm.invoke(messages=messages, tools=tools)
+    
+    model_response = chatglm.invoke(messages=messages, tools=tools, stream=stream)
+
+    if isinstance(model_response, dict) and model_response.get('tool_calls'):
+        tool_name = model_response['tool_calls'][0]['function']['name']
+        kwargs = model_response['tool_calls'][0]['function']['arguments']
+        
+        code = 200
+        result = dispatch_tool(tool_name, kwargs)
+    if isinstance(model_response, str):
+        code = 500
+        result = model_response
+
+    return BaseResponse(
+        code=code,
+        message="success",
+        data=result
+    )
+
+@router.post("/sse/chat/tools")
+async def sse_chat_with_tools(
+    model: Annotated[str, Body(...)],
+    question: Annotated[str, Body(...)],
+    stream: Annotated[bool, Body(...)],
+):
+    messages = [
+        {'role': 'system', 'content': '不要假设或猜测传入函数的参数值。如果用户的描述不明确，请要求用户提供必要信息'},
+        {'role': 'user', 'content': question}
+    ]
+    
+    model_response = chatglm.sse_invoke(messages=messages, tools=tools)
 
     if isinstance(model_response, dict) and model_response.get('tool_calls'):
         tool_name = model_response['tool_calls'][0]['function']['name']
@@ -97,18 +140,3 @@ async def chat_with_tools(
         message="success",
         data=result
     )
-
-
-@router.post("/chat/sse/completions")
-async def sse_completions(
-    model: Annotated[str, Body(...)],
-    question: Annotated[str, Body(...)],
-    stream: Annotated[bool, Body(...)],
-):
-    messages = [
-        {'role': 'system', 'content': 'You are a helpful assistant.'},
-        {'role': 'user', 'content': question}
-    ]
-    resp = chatglm.invoke(messages=messages, stream=stream)
-
-    return EventSourceResponse(resp)
