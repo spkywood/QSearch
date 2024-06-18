@@ -27,13 +27,13 @@ from sqlalchemy.orm import (
 )
 
 class QAType(enum.Enum):
-    QA_LLM = "QA_LLM"
-    QA_RAG = "QA_RAG"
-    QA_TOOL = "QA_TOOL"
+    LLM = "LLM"
+    RAG = "RAG"
+    TOOL = "TOOL"
 
 
-class User(BaseTable):
+class Guide(BaseTable):
     __tablename__ = "guides"
 
     content: Mapped[str] = mapped_column(String(2000))
-    qa_type: Mapped[QAType] = mapped_column(Enum(QAType), nullable=False, default=QAType.QA_LLM)
+    qa_type: Mapped[QAType] = mapped_column(Enum(QAType), nullable=False, default=QAType.LLM)

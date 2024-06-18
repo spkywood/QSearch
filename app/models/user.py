@@ -23,3 +23,5 @@ class User(BaseTable):
     email: Mapped[str] = mapped_column(String(100), nullable=True)
     phone: Mapped[str] = mapped_column(String(100), nullable=True)
     password: Mapped[str] = mapped_column(String(500))
+
+    knowledge_bases = relationship("KnowledgeBase", back_populates="user")
