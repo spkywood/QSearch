@@ -13,7 +13,7 @@ from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from app.models import User, KnowledgeBase
+from app.models import User, KnowledgeBase, FileChunk, KnowledgeFile
 from db.session import with_session
 from common import logger
 
@@ -82,13 +82,58 @@ async def add_knowledge_base(
     """
     添加知识库
     """
-    # name: Mapped[str] = mapped_column(String(20), nullable=False, comment='知识库名称')
-    # icon: Mapped[str] = mapped_column(String(100), nullable=False, comment='知识库图标')
-    # desc: Mapped[str] = mapped_column(String(200), nullable=False, comment='知识库描述')
-    # user_id: Mapped[int] = mapped_column(Integer, ForeignKey('users.id'), nullable=False, comment='用户ID')
-    # group_id: Mapped[int] = mapped_column(Integer, nullable=True, comment='团队ID')
-    # is_delete: Mapped[bool] = mapped_column(Boolean, default=False, nullable=True, comment='是否删除')
-
     kb = KnowledgeBase(name=kb_name, icon=kb_icon, desc=kb_desc, user_id=user_id)
-
+    session.add(kb)
+    await session.commit()
+    
     return kb
+
+@with_session
+async def add_knowledge_file(
+    session: AsyncSession,
+    user_id: int,
+    kb_name: str,
+    file_name: str,
+    file_ext: str,
+    minio_url: str,
+    process_type: str = None,
+    slice_type: str = None,
+    weights: int = None,
+    meta_data: dict = None
+) -> KnowledgeFile:
+    file = KnowledgeFile(
+        user_id=user_id, 
+        kb_name=kb_name, 
+        file_name=file_name, 
+        file_ext=file_ext, 
+        minio_url=minio_url, 
+        process_type=process_type, 
+        slice_type=slice_type, 
+        weights=weights, 
+        meta_data=meta_data
+    )
+
+    session.add(file)
+    await session.commit()
+
+    return file
+
+
+@with_session
+async def add_file_chunk(
+    session: AsyncSession,
+    file_id: int,
+    chunk_id: int,
+    text: str,
+    chunk_uuid: str
+) -> FileChunk:
+    """
+    数据库操作，将切片写入表中
+    """
+    file_chunk = FileChunk(
+        file_id=file_id, chunk_id=chunk_id, text=text, chunk_uuid=chunk_uuid
+    )
+    session.add(file_chunk)
+    await session.commit()
+
+    return file_chunk
