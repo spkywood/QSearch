@@ -10,6 +10,7 @@
 
 
 
+import os
 import torch
 from typing import Union
 from transformers import (
@@ -17,12 +18,16 @@ from transformers import (
     is_torch_npu_available
 )
 
+from setting import MODEL_PATH
+
 class LocalModel:
     def __init__(self, 
-                 model_path: str = None,
+                 model_name: str = None,
                  use_fp16: bool = False,
                  device: Union[str, int] = None
     ) -> None:
+        model_path = os.path.join(MODEL_PATH, model_name)
+
         self.tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
         self.model = AutoModel.from_pretrained(model_path, trust_remote_code=True)
 

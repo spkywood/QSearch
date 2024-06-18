@@ -19,8 +19,8 @@ def sigmoid(x):
     return 1 / (1 + np.exp(-x))
 
 class Reranker(LocalModel):
-    def __init__(self, model_path: str = None, use_fp16: bool = False, device: str | int = None) -> None:
-        super().__init__(model_path, use_fp16, device)
+    def __init__(self, model_name: str = None, use_fp16: bool = False, device: str | int = None) -> None:
+        super().__init__(model_name, use_fp16, device)
 
     @torch.no_grad()
     def compute_score(self, 
