@@ -13,8 +13,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from common.response import BaseResponse
 from app.models import User
-from db.schemas import Token, KnowledgeCreate
-from db.curds import add_knowledge_base, query_guides
+from db.schemas import Token, KnowledgeCreate, GuideCreate
+from db.curds import add_knowledge_base, query_guides, add_guide
 from app.controller import (
     get_current_user, is_root_user,
     get_password_hash,
@@ -82,6 +82,7 @@ async def get_guides(
 
 @router.post("/guides", description="增加引导词")
 async def get_guides(
+    guide: GuideCreate,
     user: User = Depends(get_current_user)
 ) -> BaseResponse:
     """
@@ -92,18 +93,14 @@ async def get_guides(
     
         mysql  -> 写入数据库
     """
-    guides = await query_guides()
-
-    if (len(guides) > 9):
-         guides = random.sample(guides, 9)
+    
+    guide = await add_guide(guide.content, guide.qa_type)
 
     return BaseResponse(
         code=200,
         msg="success",
-        data=[
-            {
-                "content" : guide.content,
-                "qa_type": guide.qa_type,
-            } for guide in guides
-        ]
+        data={
+            "content" : guide.content,
+            "qa_type": guide.qa_type,
+        }
     )
