@@ -14,6 +14,8 @@ from contextlib import contextmanager
 from collections import OrderedDict
 from typing import List, Any, Union, Tuple
 
+from app.runtime import LocalModel, Embedding, Reranker
+
 
 class ThreadSafeObject:
     def __init__(self, key: Union[str, Tuple], obj: Any = None, pool: "CachePool" = None):
@@ -99,9 +101,14 @@ class CachePool:
             return cache.acquire(owner=owner, msg=msg)
         else:
             return cache
-        
+
+from enum import Enum
+class ModelType(Enum):
+    EMBEDDING = "embedding"
+    RERANKER = "reranker"
+
 class ModelManager(CachePool):
-    def load_models(self, model: str = None, device: str = None):
+    def load_models(self, model: str = None, device: str = None, model_type: ModelType = None):
         self.atomic.acquire()
         model = model
         device = 'cuda'
@@ -111,7 +118,13 @@ class ModelManager(CachePool):
             self.set(key, item)
             with item.acquire(msg="初始化"):
                 self.atomic.release()
-                torch_model = "pytorch load model"
+
+                # 加载模型
+                if model_type == ModelType.EMBEDDING:
+                    torch_model = Embedding(model_name=model, device=device)
+                if model_type == ModelType.RERANKER:
+                    torch_model = Reranker(model_name=model, device=device)
+
                 item.obj = torch_model
                 item.finish_loading()
         else:
@@ -120,4 +133,4 @@ class ModelManager(CachePool):
         return self.get(key).obj
 
 
-model_manager = ModelManager(cache_num=3)
+model_manager = ModelManager(cache_num=5)
