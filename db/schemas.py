@@ -1,7 +1,11 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator
 import re
 from typing import Annotated, Union
+from app.models import QAType
 
+class GuideCreate(BaseModel):
+    content: str = Field(..., max_length=2000)
+    qa_type: QAType
 
 class KnowledgeCreate(BaseModel):
     name: str

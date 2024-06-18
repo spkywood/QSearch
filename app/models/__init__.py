@@ -4,7 +4,7 @@ from .role import Role
 from .permission import Permission
 from .origanization import Origanization
 from .conversation import Conversation
-from .guide import Guide
+from .guide import Guide, QAType
 from .knowledge_base import KnowledgeBase
 from .knowledge_base_config import KnowledgeBaseConfig
 from .knowledge_file import KnowledgeFile

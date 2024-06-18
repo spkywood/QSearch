@@ -7,13 +7,14 @@
 '''
 
 # here put the import lib
+import random
 from fastapi import APIRouter, Depends, HTTPException, status
 
 
 from common.response import BaseResponse
 from app.models import User
 from db.schemas import Token, KnowledgeCreate
-from db.curds import add_knowledge_base
+from db.curds import add_knowledge_base, query_guides
 from app.controller import (
     get_current_user, is_root_user,
     get_password_hash,
@@ -48,4 +49,61 @@ async def create_kb(
             "icon": knowledgebase.icon,
             "desc": knowledgebase.desc,
         }
+    )
+
+@router.get("/guides", description="获取引导词")
+async def get_guides(
+    user: User = Depends(get_current_user)
+) -> BaseResponse:
+    """
+    创建知识库: 
+        minio  -> 创建bucket
+        es     -> 创建index
+        milvus -> 创建collection
+    
+        mysql  -> 写入数据库
+    """
+    guides = await query_guides()
+
+    if (len(guides) > 9):
+         guides = random.sample(guides, 9)
+
+    return BaseResponse(
+        code=200,
+        msg="success",
+        data=[
+            {
+                "content" : guide.content,
+                "qa_type": guide.qa_type,
+            } for guide in guides
+        ]
+    )
+
+
+@router.post("/guides", description="增加引导词")
+async def get_guides(
+    user: User = Depends(get_current_user)
+) -> BaseResponse:
+    """
+    创建知识库: 
+        minio  -> 创建bucket
+        es     -> 创建index
+        milvus -> 创建collection
+    
+        mysql  -> 写入数据库
+    """
+    guides = await query_guides()
+
+    if (len(guides) > 9):
+         guides = random.sample(guides, 9)
+
+    return BaseResponse(
+        code=200,
+        msg="success",
+        data=[
+            {
+                "content" : guide.content,
+                "qa_type": guide.qa_type,
+            } for guide in guides
+        ]
     )

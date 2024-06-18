@@ -13,7 +13,10 @@ from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from app.models import User, KnowledgeBase, FileChunk, KnowledgeFile
+from app.models import (
+    User, KnowledgeBase, FileChunk, KnowledgeFile,
+    Guide, QAType
+)
 from db.session import with_session
 from common import logger
 
@@ -137,3 +140,26 @@ async def add_file_chunk(
     await session.commit()
 
     return file_chunk
+
+@with_session
+def add_guide(session: AsyncSession, content: str, qa_type: QAType) -> Guide:
+    """
+    添加引导词
+    """
+    guide = Guide(content=content, qa_type=qa_type)
+    session.add(guide)
+    session.commit()
+    
+    return guide
+
+
+
+@with_session
+async def query_guides(session: AsyncSession) -> List[Guide]:
+    """
+    获取引导词
+    """
+    query = await session.execute(select(Guide))
+    guides = query.scalars().all()
+    return guides
+
