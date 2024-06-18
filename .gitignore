@@ -84,7 +84,7 @@ celerybeat.pid
 
 # dotenv
 .env
-.env.*
+# .env.*
 
 # virtualenv
 pip-log.txt
