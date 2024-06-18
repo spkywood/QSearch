@@ -3,6 +3,11 @@ import re
 from typing import Annotated, Union
 
 
+class KnowledgeCreate(BaseModel):
+    name: str
+    icon: str
+    desc: str
+
 class UserLogin(BaseModel):
     name: str
     password: str

@@ -31,7 +31,7 @@ from app.controller import (
 router = APIRouter()
 
 
-@router.get("/users")
+@router.get("/users", description="获取所有用户信息")
 async def get_users(user: User = Depends(get_current_user)):
     if not is_root_user(user):
         raise HTTPException(

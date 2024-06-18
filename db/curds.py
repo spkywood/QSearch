@@ -13,7 +13,7 @@ from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from app.models import User
+from app.models import User, KnowledgeBase
 from db.session import with_session
 from common import logger
 
@@ -72,3 +72,23 @@ async def query_user_with_name(session: AsyncSession, name: str):
     user = query.scalar_one_or_none()
     
     return user
+
+
+@with_session
+async def add_knowledge_base(
+    session: AsyncSession,
+    kb_name: str, kb_icon: str, kb_desc: str, user_id: int
+) -> KnowledgeBase:
+    """
+    添加知识库
+    """
+    # name: Mapped[str] = mapped_column(String(20), nullable=False, comment='知识库名称')
+    # icon: Mapped[str] = mapped_column(String(100), nullable=False, comment='知识库图标')
+    # desc: Mapped[str] = mapped_column(String(200), nullable=False, comment='知识库描述')
+    # user_id: Mapped[int] = mapped_column(Integer, ForeignKey('users.id'), nullable=False, comment='用户ID')
+    # group_id: Mapped[int] = mapped_column(Integer, nullable=True, comment='团队ID')
+    # is_delete: Mapped[bool] = mapped_column(Boolean, default=False, nullable=True, comment='是否删除')
+
+    kb = KnowledgeBase(name=kb_name, icon=kb_icon, desc=kb_desc, user_id=user_id)
+
+    return kb
