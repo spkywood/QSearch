@@ -6,4 +6,5 @@ from .settings import (
     MAX_CONCURRENT_THREADS,
     MINIO_ACCESS_KEY,
     MINIO_SECRET_KEY,
+    APP_SECRET_KEY,
 )
