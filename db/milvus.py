@@ -86,8 +86,7 @@ class MilvusStore(metaclass=Singleton):
             raise MilvusException(
                 code=404, message=f"Collection {collection_name} does not exist"
             )
-        
-        
+
         return self.client.query(collection_name, filter=filter, top_k=top_k)
     
     """
