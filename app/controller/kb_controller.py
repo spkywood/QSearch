@@ -85,15 +85,6 @@ async def get_guides(
     guide: GuideCreate,
     user: User = Depends(get_current_user)
 ) -> BaseResponse:
-    """
-    创建知识库: 
-        minio  -> 创建bucket
-        es     -> 创建index
-        milvus -> 创建collection
-    
-        mysql  -> 写入数据库
-    """
-    
     guide = await add_guide(guide.content, guide.qa_type)
 
     return BaseResponse(

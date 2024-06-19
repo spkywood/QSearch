@@ -142,7 +142,7 @@ async def add_file_chunk(
     return file_chunk
 
 @with_session
-def add_guide(session: AsyncSession, content: str, qa_type: QAType) -> Guide:
+async def add_guide(session: AsyncSession, content: str, qa_type: QAType) -> Guide:
     """
     添加引导词
     """
