@@ -1,14 +1,14 @@
-
-from langchain_community.document_loaders import UnstructuredFileLoader
-from app.loaders.ocr import get_ocr
 import cv2
-from PIL import Image
 import fitz
-import re
 import PyPDF2
-
-from PyPDF2 import EncodingException, DecodeException
 import numpy as np
+from PIL import Image
+from io import BytesIO
+from PyPDF2 import EncodingException, DecodeException
+from langchain_community.document_loaders import UnstructuredFileLoader
+
+from common import logger
+from app.loaders.ocr import get_ocr
 
 PDF_OCR_THRESHOLD = (0.6, 0.6)
 
@@ -212,18 +212,22 @@ class PdfLoader(UnstructuredFileLoader):
             try:
                 count = 0
                 resp = ""
-                pdfFileObj = open(filepath, 'rb')
+                if isinstance(filepath, str):
+                    pdfFileObj = open(filepath, 'rb')
+                else:
+                    pdfFileObj = BytesIO(filepath)
                 pdfReader = PyPDF2.PdfReader(pdfFileObj, strict=False)
                 num_pages = len(pdfReader.pages)
+                
                 # 无异常情况下使用PyPDF2
                 """
-                TODO: 产生乱码
+                [TODO]: 产生乱码
                 """
                 while count < num_pages:
                     text = ""
                     pageObj = pdfReader.pages[count]
                     count += 1
-                    text = pageObj.extract_text()  
+                    text = pageObj.extract_text()
                     words = "".join(text)
                     resp += words
                 
@@ -232,7 +236,11 @@ class PdfLoader(UnstructuredFileLoader):
             except (EncodingException, DecodeException, UnicodeEncodeError, Exception) as e:
                 # 编码异常 使用fitz
                 resp = ""
-                doc = fitz.open(filepath)
+                if isinstance(filepath, str):
+                    doc = fitz.open(filepath)
+                else:
+                    doc = fitz.open(stream=filepath, filetype="pdf")
+
                 for page in doc:
                     bboxes = column_boxes(page, footer_margin=50, no_image_text=True)
                     for rect in bboxes:

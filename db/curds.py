@@ -98,7 +98,6 @@ async def add_knowledge_file(
     kb_name: str,
     file_name: str,
     file_ext: str,
-    minio_url: str,
     process_type: str = None,
     slice_type: str = None,
     weights: int = None,
@@ -108,8 +107,7 @@ async def add_knowledge_file(
         user_id=user_id, 
         kb_name=kb_name, 
         file_name=file_name, 
-        file_ext=file_ext, 
-        minio_url=minio_url, 
+        file_ext=file_ext,
         process_type=process_type, 
         slice_type=slice_type, 
         weights=weights, 
@@ -127,14 +125,14 @@ async def add_file_chunk(
     session: AsyncSession,
     file_id: int,
     chunk_id: int,
-    text: str,
+    chunk: str,
     chunk_uuid: str
 ) -> FileChunk:
     """
     数据库操作，将切片写入表中
     """
     file_chunk = FileChunk(
-        file_id=file_id, chunk_id=chunk_id, text=text, chunk_uuid=chunk_uuid
+        file_id=file_id, chunk_id=chunk_id, chunk=chunk, chunk_uuid=chunk_uuid
     )
     session.add(file_chunk)
     await session.commit()

@@ -10,7 +10,6 @@ class KnowledgeFile(BaseTable):
     kb_name: Mapped[str] = mapped_column(String(10), nullable=False, comment="知识库名称")
     file_name: Mapped[str] = mapped_column(String(100), nullable=False, comment="文件名称")
     file_ext: Mapped[str] = mapped_column(String(10), nullable=False, comment="文件扩展名")
-    minio_url: Mapped[str] = mapped_column(String(200), nullable=False, comment="文件存储地址")
     process_type: Mapped[str] = mapped_column(String(10), nullable=True, comment="处理类型")
     slice_type: Mapped[str] = mapped_column(String(10), nullable=True, comment="切片类型")
     weights: Mapped[int] = mapped_column(Integer, nullable=True, comment="权重")

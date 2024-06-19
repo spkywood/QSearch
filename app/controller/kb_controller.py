@@ -13,6 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from common.response import BaseResponse
 from app.models import User
+from db import minio_client, es_client, milvus_client
 from db.schemas import Token, KnowledgeCreate, GuideCreate
 from db.curds import add_knowledge_base, query_guides, add_guide
 from app.controller import (
@@ -39,6 +40,15 @@ async def create_kb(
     
         mysql  -> 写入数据库
     """
+    # [TODO] 校验，知识库重名
+    minio_client.delete_bucket(kb.name)
+    milvus_client.client.drop_collection(kb.name)
+    es_client.delete_index(kb.name)
+
+    minio_client.create_bucket(kb.name)
+    es_client.create_index(kb.name)
+    milvus_client.create_collection(kb.name, dim=1024)
+
     knowledgebase = await add_knowledge_base(kb.name, kb.icon, kb.desc, user.id)
 
     return BaseResponse(

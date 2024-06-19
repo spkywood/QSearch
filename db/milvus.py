@@ -32,7 +32,7 @@ class MilvusStore(metaclass=Singleton):
         fields = [
             FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),
             FieldSchema(name="kb_name", dtype=DataType.VARCHAR, max_length=100, is_partition_key=True),
-            FieldSchema(name="chunk_text", dtype=DataType.VARCHAR, max_length=20000),
+            FieldSchema(name="chunk", dtype=DataType.VARCHAR, max_length=20000),
             FieldSchema(name="chunk_uuid", dtype=DataType.VARCHAR, max_length=100),
             FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=dim),
             FieldSchema(name="metadata", dtype=DataType.JSON)
@@ -67,7 +67,7 @@ class MilvusStore(metaclass=Singleton):
             #     code=510, message=f"Collection {collection_name} already exists")
         else: 
             schema = MilvusStore.create_schema(dim)
-            index_params = self.client.prepare_index_params("embedding", metric_type=metric_type)
+            index_params = self.client.prepare_index_params("vector", metric_type=metric_type)
 
             return self.client.create_collection(collection_name, schema=schema, index_params=index_params)
 
@@ -94,7 +94,7 @@ class MilvusStore(metaclass=Singleton):
         https://www.milvus-io.com/boolean
     """
     def search(self, collection_name: str, 
-               query_embedding: List,
+               query : List,
                top_k: int = 3,
                expr: str = None,
                consistency_level: str = "Eventually") -> List[Dict]:
@@ -107,8 +107,8 @@ class MilvusStore(metaclass=Singleton):
         collection.load()
         search_param = {
             "expr": expr,
-            "data": [query_embedding],
-            "anns_field": "embedding",
+            "data": [query],
+            "anns_field": "vector",
             "param": {"metric_type": "L2", "params": {"nprobe": 10}},
             "limit": top_k,
             "output_fields": ["uuid"],
@@ -118,3 +118,7 @@ class MilvusStore(metaclass=Singleton):
         
         results = collection.search(**search_param)
         return [r.to_dict().get("entity").get("uuid") for result in results for r in result]
+
+
+from setting import MILVUS_HOST, MILVUS_PORT
+milvus_client = MilvusStore(MILVUS_HOST, MILVUS_PORT)

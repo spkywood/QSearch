@@ -11,12 +11,12 @@
 
 import asyncio
 
-from db import migrate
+from db.migrate import drop_tables, create_tables
 from db.curds import add_user, query_user
 
 async def main():
-    await migrate('drop')
-    await migrate('init')
+    await drop_tables()
+    await create_tables()
     
 
 if __name__ == '__main__':

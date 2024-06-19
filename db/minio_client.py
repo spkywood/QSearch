@@ -9,6 +9,8 @@
 '''
 
 
+import urllib
+import urllib.parse
 from minio import Minio
 from minio.error import S3Error
 
@@ -23,7 +25,7 @@ class MinioClient(metaclass=Singleton):
             secret_key=secret_key,
             secure=secure
         )
-    
+
     def bucket_exists(self, bucket_name):
         return self.client.bucket_exists(bucket_name)
     
@@ -48,3 +50,17 @@ class MinioClient(metaclass=Singleton):
             self.client.put_object(bucket_name, obj_name, data, size)
         except S3Error as e:
             logger.warning(f"put object {obj_name} to {bucket_name} {e}.")
+            raise Exception(f"{e}.")
+        
+    def get_obj_url(self, bucket_name, obj_name):
+        url = self.client.presigned_get_object(bucket_name, obj_name)
+        return self.client.presigned_get_object(bucket_name, obj_name)
+
+from setting import MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY
+
+minio_client = MinioClient(
+    endpoint=MINIO_ENDPOINT,
+    access_key=MINIO_ACCESS_KEY,
+    secret_key=MINIO_SECRET_KEY,
+    secure=False
+)

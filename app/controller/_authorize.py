@@ -15,6 +15,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Union
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidKeyError
+from jose.exceptions import ExpiredSignatureError
 from fastapi import Depends, HTTPException, status
 from db.schemas import Token, TokenData
 
@@ -69,15 +70,22 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+    expired_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail= "Token expired",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception
         token_data = TokenData(username=username)
-        logger.info(f"{username}")
     except InvalidKeyError:
         raise credentials_exception
+    except ExpiredSignatureError:
+        raise expired_exception
     
     user: User = await query_user_with_name(username)
     if user is None:

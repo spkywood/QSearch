@@ -21,7 +21,7 @@ class ESClient(metaclass=Singleton):
                 "file_name": {"type": "keyword"},
                 "chunk_id": {"type": "integer"},
                 "chunk_uuid": {"type": "keyword"},
-                "chunk_text": {"type": "text", "analyzer": "standard"},
+                "chunk": {"type": "text", "analyzer": "standard"},
                 "metadata": {
                     "type": "text",
                     "fields": {
@@ -33,10 +33,10 @@ class ESClient(metaclass=Singleton):
         }
     }
 
-    def __init__(self, es_host='localhost', es_port='9200', scroll='2m', size = 3) -> None:
+    def __init__(self, host='localhost', port='9200', scroll='2m', size = 3) -> None:
         self.scroll = scroll
         self.size = size
-        self.es = Elasticsearch(f"http://{es_host}:{es_port}")
+        self.es = Elasticsearch(f"http://{host}:{port}")
 
     def create_index(self, index_name: str):
         if not self.es.indices.exists(index=index_name):
@@ -61,7 +61,7 @@ class ESClient(metaclass=Singleton):
             body={
                 "query": {
                     "match": {
-                        "chunk_text": query
+                        "chunk": query
                     }
                 },
                 "size": self.size
@@ -82,3 +82,7 @@ class ESClient(metaclass=Singleton):
                 logger.info(f"Index '{index_name}' does not exist.")
         except Exception as e:
             logger.info(f"Failed to delete index '{index_name}': {e}")
+
+from setting import ES_HOST, ES_PORT
+
+es_client = ESClient(host=ES_HOST, port=ES_PORT)

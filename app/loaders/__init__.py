@@ -3,6 +3,8 @@ import chardet
 import importlib
 from typing import Dict
 
+
+from common import logger
 from .doc_loader import DocLoader
 from .pdf_loader import PdfLoader
 # from .img_loader import ImgLoader
@@ -64,11 +66,10 @@ def get_loader(loader_name: str, file_path: str, loader_kwargs: Dict = None):
     return loader
 
 # 获取文档text
-def get_text(file: str) -> str:
+def get_text(file: str, ext: str = None) -> str:
     """
-    根据文件名获取文档text
+    根据名获取文档text
     """
-    ext= os.path.splitext(file)[-1].lower()
     if ext not in SUPPORTED_EXTS:
         raise ValueError(f"暂未支持的文件格式 {ext}")
     

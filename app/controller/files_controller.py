@@ -20,16 +20,8 @@ asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 from common.response import BaseResponse
 from common.run_async import run_async
 from common import logger
-from db.minio_client import MinioClient
-from setting import MINIO_ACCESS_KEY, MINIO_SECRET_KEY
+from db.minio_client import minio_client
 
-
-minio_client = MinioClient(
-    endpoint="127.0.0.1:9000",
-    access_key=MINIO_ACCESS_KEY,
-    secret_key=MINIO_SECRET_KEY,
-    secure=False
-)
 
 router = APIRouter()
 
