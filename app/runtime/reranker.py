@@ -12,7 +12,7 @@
 import os
 import numpy as np
 from FlagEmbedding import FlagReranker
-from typing import Any, List
+from typing import Any, List, Dict
 
 from setting import MODEL_PATH
 
@@ -21,11 +21,11 @@ class Reranker:
         model_name = os.path.join(MODEL_PATH, model_name)
         self.reranker = FlagReranker(model_name, use_fp16=False)
     
-    def compute_score(self, question: str, documents: List[str]) -> List[Any]:
+    def compute_score(self, question: str, documents: List[Dict[str, str]]) -> List[Any]:
         if len(documents) == 0:  # to avoid empty api call
             return []
         
-        sentence_pairs = [(question, doc) for doc in documents]
+        sentence_pairs = [(question, doc['document']) for doc in documents]
 
         all_scores = self.reranker.compute_score(sentence_pairs, normalize=True)
         
@@ -34,6 +34,9 @@ class Reranker:
             sentence_scores.append({
                 "index": i,
                 "score": result,
-                "document": documents[i]
+                "document": documents[i]['document'],
+                "uuid" : documents[i]['uuid'],
+                "kb_name" : documents[i]['kb_name'],
+                "file_name" : documents[i]['file_name'],
             })
         return sentence_scores

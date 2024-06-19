@@ -90,6 +90,8 @@ from app.runtime.reranker import Reranker
 from db import minio_client, milvus_client, es_client
 from common.cache import model_manager, ModelType
 
+from common.prompt import knowledge_qa_prompt
+
 embedding: Embedding = model_manager.load_models(
     'BAAI/bge-large-zh-v1.5', 
     device='cuda', 
@@ -135,20 +137,32 @@ async def chat_with_knowledge(
         next_text = await query_chunk_with_id(file_id=file_id, chunk_id=chunk_id+1)
         
         text = prev_text.strip() + chunk['chunk'].strip() + next_text.strip()
-        knowledges.append(text)
+        # knowledges.append(text)
+        knowledges.append({
+            "uuid" : uuid,
+            "kb_name" : item.kb_name,
+            "file_name" : chunk['file_name'],
+            "document" : text,
+        })
     # [TODO] 
     # 1. 检查用户是否具有访问知识库的权限
 
     scores = reranker.compute_score(item.question, knowledges)
+    top = sorted(scores, key=lambda x: x['score'], reverse=True)
 
-    top_data = sorted(scores, key=lambda x: x['score'], reverse=True)
+    prompt = knowledge_qa_prompt(top[0]['document'], item.question)
+    
+    messages = [
+        {'role': 'system', 'content': '你是一个知识库问答助手，回答用户的问题。如果知识库中没有答案，请回答“我不知道”。'},
+        {'role': 'user', 'content': prompt}
+    ]
+
+    return EventSourceResponse(chatglm.sse_invoke(messages=messages))
 
     return BaseResponse(
         code=200,
         message="success",
-        data={
-            "scores" : top_data
-        }
+        data=top[0]
     )
 
 @router.post("/chat/tools")
