@@ -24,8 +24,8 @@ embedding: Embedding = model_manager.load_models(
 )
 
 text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=1000, 
-    chunk_overlap=100,
+    chunk_size=500, 
+    chunk_overlap=50,
     keep_separator=True,
     is_separator_regex=True,
     separators=['(?<=[。！？])']
@@ -71,12 +71,14 @@ async def doc_parsers(
 
         await add_file_chunk(file_id=file_id, chunk_id=index, chunk=chunk, chunk_uuid=chunk_uuid)
 
+        vector = embedding.encode(chunk, max_length=512)[0].tolist()
+        logger.info(len(vector))
         milvus_rows.append({
             "kb_name": kb_name,
             "chunk": chunk,
-            "uuid": chunk_uuid,
-            "vector": embedding.encode(chunk, max_length=512).tolist(),
-            "meta_data": {}
+            "chunk_uuid": chunk_uuid,
+            "vector": vector,
+            "metadata": {}
         })
 
         es_rows.append({

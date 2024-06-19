@@ -9,51 +9,31 @@
 '''
 
 
-import torch
+import os
 import numpy as np
-from tqdm import tqdm
-from typing import Union, List, Tuple
-from app.runtime.local_model import LocalModel
+from FlagEmbedding import FlagReranker
+from typing import Any, List
 
-def sigmoid(x):
-    return 1 / (1 + np.exp(-x))
+from setting import MODEL_PATH
 
-class Reranker(LocalModel):
-    def __init__(self, model_name: str = None, use_fp16: bool = False, device: str | int = None) -> None:
-        super().__init__(model_name, use_fp16, device)
+class Reranker:
+    def __init__(self, model_name: str, device: str = None) -> None:
+        model_name = os.path.join(MODEL_PATH, model_name)
+        self.reranker = FlagReranker(model_name, use_fp16=False)
+    
+    def compute_score(self, question: str, documents: List[str]) -> List[Any]:
+        if len(documents) == 0:  # to avoid empty api call
+            return []
+        
+        sentence_pairs = [(question, doc) for doc in documents]
 
-    @torch.no_grad()
-    def compute_score(self, 
-                      sentence_pairs: Union[List[Tuple[str, str]], Tuple[str, str]], 
-                      batch_size: int = 256,
-                      max_length: int = 512, 
-                      normalize: bool = False
-                      ) -> List[float]:
-        if self.num_gpus > 0:
-            batch_size = batch_size * self.num_gpus
-
-        assert isinstance(sentence_pairs, list)
-        if isinstance(sentence_pairs[0], str):
-            sentence_pairs = [sentence_pairs]
-
-        all_scores = []
-        for start_index in tqdm(range(0, len(sentence_pairs), batch_size), desc="Compute Scores",
-                                disable=len(sentence_pairs) < 128):
-            sentences_batch = sentence_pairs[start_index:start_index + batch_size]
-            inputs = self.tokenizer(
-                sentences_batch,
-                padding=True,
-                truncation=True,
-                return_tensors='pt',
-                max_length=max_length,
-            ).to(self.device)
-
-            scores = self.model(**inputs, return_dict=True).logits.view(-1, ).float()
-            all_scores.extend(scores.cpu().numpy().tolist())
-
-        if normalize:
-            all_scores = [sigmoid(score) for score in all_scores]
-
-        if len(all_scores) == 1:
-            return all_scores[0]
-        return all_scores
+        all_scores = self.reranker.compute_score(sentence_pairs, normalize=True)
+        
+        sentence_scores = []
+        for i, result in enumerate(all_scores):
+            sentence_scores.append({
+                "index": i,
+                "score": result,
+                "document": documents[i]
+            })
+        return sentence_scores

@@ -12,6 +12,7 @@
 from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy import and_
 
 from app.models import (
     User, KnowledgeBase, FileChunk, KnowledgeFile,
@@ -161,3 +162,28 @@ async def query_guides(session: AsyncSession) -> List[Guide]:
     guides = query.scalars().all()
     return guides
 
+
+@with_session
+async def query_chunk_with_uuid(session: AsyncSession, chunk_uuid: str) -> FileChunk:
+    # [TODO] 待优化SQL
+    stmt = select(FileChunk).where(FileChunk.chunk_uuid == chunk_uuid)
+    result = await session.execute(stmt)
+    chunk = result.scalar_one_or_none()
+
+    stmt = select(KnowledgeFile.file_name).where(KnowledgeFile.id == chunk.file_id)
+    result = await session.execute(stmt)
+    file_name = result.scalar_one_or_none()
+    return {
+        "chunk_id" : chunk.chunk_id,
+        "file_id" : chunk.file_id,
+        "chunk" : chunk.chunk,
+        "file_name" : file_name,
+    }
+
+@with_session
+async def query_chunk_with_id(session: AsyncSession, file_id: int , chunk_id: int) -> FileChunk:
+    # [TODO] 待优化SQL
+    stmt = select(FileChunk.chunk).where(and_(FileChunk.file_id == file_id, FileChunk.chunk_id == chunk_id))
+    result = await session.execute(stmt)
+    text = result.scalar_one_or_none()
+    return text if text else ""

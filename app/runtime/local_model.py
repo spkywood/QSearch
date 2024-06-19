@@ -26,10 +26,12 @@ class LocalModel:
                  use_fp16: bool = False,
                  device: Union[str, int] = None
     ) -> None:
-        model_path = os.path.join(MODEL_PATH, model_name)
+        self.num_gpus = 1
+        
+        self.model_path = os.path.join(MODEL_PATH, model_name)
 
-        self.tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
-        self.model = AutoModel.from_pretrained(model_path, trust_remote_code=True)
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model_path, trust_remote_code=True)
+        self.model = AutoModel.from_pretrained(self.model_path, trust_remote_code=True)
 
         if device and isinstance(device, str):
             self.device = torch.device(device)

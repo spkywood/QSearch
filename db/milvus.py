@@ -111,13 +111,13 @@ class MilvusStore(metaclass=Singleton):
             "anns_field": "vector",
             "param": {"metric_type": "L2", "params": {"nprobe": 10}},
             "limit": top_k,
-            "output_fields": ["uuid"],
+            "output_fields": ["chunk_uuid"],
             "consistency_level": consistency_level
         }
         logger.info("search..." if expr is None else "hybrid search...")
         
         results = collection.search(**search_param)
-        return [r.to_dict().get("entity").get("uuid") for result in results for r in result]
+        return [r.to_dict().get("entity").get("chunk_uuid") for result in results for r in result]
 
 
 from setting import MILVUS_HOST, MILVUS_PORT

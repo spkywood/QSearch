@@ -3,6 +3,12 @@ import re
 from typing import Annotated, Union
 from app.models import QAType
 
+
+class RAGQuestion(BaseModel):
+    question: str
+    kb_name: str
+    
+
 class GuideCreate(BaseModel):
     content: str = Field(..., max_length=2000)
     qa_type: QAType
