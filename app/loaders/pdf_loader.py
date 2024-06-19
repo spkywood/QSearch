@@ -12,7 +12,7 @@ import numpy as np
 
 PDF_OCR_THRESHOLD = (0.6, 0.6)
 
-class PDFParser(UnstructuredFileLoader):
+class PdfLoader(UnstructuredFileLoader):
     def parser(self):
         def column_boxes(page, footer_margin=50, header_margin=50, no_image_text=True):
             paths = page.get_drawings()

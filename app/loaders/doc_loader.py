@@ -3,7 +3,7 @@ from typing import List
 from langchain_community.document_loaders import UnstructuredFileLoader
 
 
-class DOCParser(UnstructuredFileLoader):
+class DocLoader(UnstructuredFileLoader):
     """
     A custom document parser that extends the UnstructuredFileLoader class.
     """
