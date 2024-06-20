@@ -21,6 +21,8 @@ class KnowledgeCreate(BaseModel):
 class UserLogin(BaseModel):
     name: str
     password: str
+    captcha_id: str
+    captcha: str = Field(..., min_length=4, max_length=4)
 
     # 验证密码必须包含大写字母、小写字母和数字
     @field_validator('password')

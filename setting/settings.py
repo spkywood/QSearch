@@ -45,3 +45,7 @@ ES_PORT = os.getenv("ES_PORT")
 # MILVUS
 MILVUS_HOST = os.getenv("MILVUS_HOST")
 MILVUS_PORT = os.getenv("MILVUS_PORT")
+
+# REDIS
+REDIS_HOST = os.getenv("REDIS_HOST")
+REDIS_PORT = os.getenv("REDIS_PORT")
