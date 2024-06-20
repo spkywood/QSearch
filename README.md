@@ -1,6 +1,9 @@
-# QSearch
+<p align="center">QSearch</p>
 
-个人开发 RAG 应用，调用ChatGLM-4和Qwen-max
+QSearch个人开源的 <code>LLM</code> 和 <code>RAG</code> 应用，支持本地模型和商用模型调用，整体实现方案使用高级 RAG 技术方案，主要使用召回预处理，多路召回，召回后处理，Reranker 等。
+
+[OpenAI分享他们在RAG技术的最佳实践](https://threadreaderapp.com/thread/1796502273197314545.html?utm_campaign=topunroll)
+
 
 ## 应用部署
 
@@ -9,22 +12,7 @@ git clone https://github.com/spkywood/QSearch.git
 
 cd QSearch
 
-touch .env
-```
-
-在.env文件中配置
-
-```sh
-# MYSQL 
-MYSQL_HOST = ''
-MYSQL_PORT = 3306
-MYSQL_USER = ''
-MYSQL_PASSWORD = ''
-MYSQL_DATABASE = ''
-
-# API_KEY
-QWEN_API_KEY = ''
-CHATGLM_API_KEY = ''
+cp .env.example .env
 ```
 
 ### 数据库初始化
@@ -41,7 +29,7 @@ python startup.py
 
 ## 主要组件
 
-- fastapi 
+- fastapi   Api
 - milvus    向量数据库
 - mysql     系统数据库
 - minio     对象存储
@@ -56,13 +44,12 @@ python startup.py
 ## TODO
 
 - [ ] UI
-- [ ] Document解析
+- [x] Document解析
 - [ ] Agent
 - [ ] COT 
-- [ ] 查询意图识别
-- [ ] 查询分解
 - [ ] 查询路由
 - [ ] RAPTOR
+- [ ] Docker
 
 
 ## PS 
