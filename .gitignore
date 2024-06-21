@@ -2,6 +2,9 @@
 demo/data/
 demo/download*
 
+# docker volumes
+docker/volumes
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
