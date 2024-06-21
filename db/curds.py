@@ -191,11 +191,11 @@ async def query_chunk_with_id(session: AsyncSession, file_id: int , chunk_id: in
 
 
 @with_session
-async def add_conversation(session: AsyncSession, name: str, user_id: int) -> Conversation:
+async def add_conversation(session: AsyncSession, name: str, conv_uuid: str, user_id: int) -> Conversation:
     """   
     添加会话
     """
-    conversation = Conversation(name=name, user_id=user_id)
+    conversation = Conversation(name=name, conv_uuid=conv_uuid, user_id=user_id)
     session.add(conversation)
     await session.commit()
     return conversation

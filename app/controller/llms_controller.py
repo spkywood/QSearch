@@ -40,8 +40,8 @@ router = APIRouter()
 # [TODO] 封装redis
 from app.controller.users_controller import redis 
 
-@router.get("/chat/sessions")
-async def create_chat(
+@router.get("/chat/sessions", summary="获取会话列表")
+async def get_chat_sessions(
     user: User = Depends(get_current_user)
 ) -> BaseResponse:
     convs = await query_conversation(user_id=user.id)
@@ -49,11 +49,11 @@ async def create_chat(
     return BaseResponse(
         code=200,
         message="success",
-        data=convs
+        data=[conv.name for conv in convs]
     )
 
-
-@router.post("/chat/sessions")
+'''创建会话'''
+@router.post("/chat/sessions", summary="创建会话")
 async def create_chat(
     chat_session: ChatSession,
     user: User = Depends(get_current_user)
@@ -62,17 +62,17 @@ async def create_chat(
     创建会话，在内存中和redis中创建user.name, chat_session.topic
     redis hset name:conversation_{user.name} key:{chat_session.topic}
     """
-    key_string = f'{chat_session.topic}_{time()}'
+    key_string = f'{user.name}_{chat_session.topic}'
     redis_name = f'conversation:{user.name}'
-    redis_key = str(uuid.uuid5(uuid.NAMESPACE_DNS, key_string))
+    conv_uuid = str(uuid.uuid5(uuid.NAMESPACE_OID, key_string))
     messages = [
         {'role': 'system', 'content': 'You are a helpful assistant.'}
     ]
     
-    await redis.hset(redis_name, redis_key, json.dumps(messages))
+    await redis.hset(redis_name, conv_uuid, json.dumps(messages))
 
     # 写入conversation表中
-    conv = await add_conversation(name=redis_key, user_id=user.id)
+    conv = await add_conversation(name=chat_session, conv_uuid=conv_uuid, user_id=user.id)
 
     return BaseResponse(
         code=200,
@@ -87,6 +87,27 @@ async def create_chat(
                 }
             }
         }
+    )
+
+
+@router.post("/chat/history", summary="获取历史对话记录")
+async def get_chat_history(
+    chat_session: ChatSession,
+    user: User = Depends(get_current_user)
+) -> BaseResponse:
+    """
+    创建会话，在内存中和redis中创建user.name, chat_session.topic
+    redis hset name:conversation_{user.name} key:{chat_session.topic}
+    """
+    key_string = f'{user.name}_{chat_session.topic}'
+    redis_name = f'conversation:{user.name}'
+    conv_uuid = str(uuid.uuid5(uuid.NAMESPACE_OID, key_string))
+
+    history = await redis.hget(redis_name, conv_uuid)
+    return BaseResponse(
+        code=200,
+        message="success",
+        data=history
     )
 
 @router.post("/chat/completions")

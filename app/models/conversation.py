@@ -19,7 +19,8 @@ from sqlalchemy.orm import (
 class Conversation(BaseTable):
     __tablename__ = "conversations"
 
-    name: Mapped[str] = mapped_column(String(255), nullable=True, default='default')
+    name: Mapped[str] = mapped_column(String(255), nullable=False, default='default')
+    conv_uuid: Mapped[str] = mapped_column(String(255), nullable=False)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey('users.id', ondelete='CASCADE'))
 
     user = relationship('User', back_populates='conversations')
