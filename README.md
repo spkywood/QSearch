@@ -17,6 +17,14 @@ cd QSearch
 cp .env.example .env
 ```
 
+### 安装中间件
+
+```sh
+cd docker
+
+docker compose -f docker-compose.middleware.yaml up -d
+```
+
 ### 数据库初始化
 
 ```sh
@@ -51,7 +59,7 @@ python startup.py
 - [ ] COT 
 - [ ] 查询路由
 - [ ] RAPTOR
-- [ ] Docker
+- [x] Docker
 
 
 ## PS 
