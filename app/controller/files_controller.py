@@ -29,7 +29,7 @@ from common.cache import model_manager, ModelType
 from app.models import User, KnowledgeFile
 from app.loaders import get_text
 from app.controller import get_current_user
-from db.curds import add_knowledge_file, add_file_chunk
+from db.curds import add_knowledge_file, add_file_chunk, get_kb_hash_name
 
 from app.runtime.embedding import Embedding
 from db import minio_client, milvus_client, es_client
@@ -105,7 +105,8 @@ async def doc_parsers(
     kb_name: str = Form(..., description="知识库", examples=["default"]),
     user: User = Depends(get_current_user)
 ) -> BaseResponse:
-    if not await kb_exist(kb_name):
+    hash_name = await get_kb_hash_name(kb_name, user.id)
+    if hash_name is None:
         return BaseResponse(code=404, msg="failure", data="知识库不存在，请创建")
     
     file_ext = filename.split('.')[-1]
@@ -113,8 +114,8 @@ async def doc_parsers(
     if text == '':
         return BaseResponse(code=304, msg="failure", data="文件处理异常")
     
-    minio_client.upload_data(kb_name, filename, BytesIO(file), len(file))
-    minio_url = minio_client.get_obj_url(kb_name, filename)
+    minio_client.upload_data(hash_name, filename, BytesIO(file), len(file))
+    minio_url = minio_client.get_obj_url(hash_name, filename)
 
     chunks = text_splitter.split_text(text)
     
@@ -153,8 +154,8 @@ async def doc_parsers(
             "created_at": datetime.now()
         })
 
-    milvus_client.insert(kb_name, milvus_rows)
-    es_client.insert(kb_name, es_rows)
+    milvus_client.insert(hash_name, milvus_rows)
+    es_client.insert(hash_name, es_rows)
   
     """
     数据库操作

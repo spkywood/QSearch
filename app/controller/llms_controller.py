@@ -9,7 +9,7 @@
 '''
 
 
-from typing import Annotated
+from typing import Annotated, List, Dict
 from fastapi import APIRouter, Body, Depends
 from sse_starlette.sse import EventSourceResponse
 import json
@@ -18,12 +18,11 @@ from time import time
 from common import logger
 from app.models import User
 from app.controller import get_current_user
-from db.schemas import ChatSession, RAGQuestion
+from db.schemas import ChatSession, RAGQuestion, QAItem, ChatHistoryRequest
 from common.response import BaseResponse
 from app.runtime import LLMChatGLM, LLMQwen
 from setting import CHATGLM_API_KEY, QWEN_API_KEY
 from tools.register import tools, dispatch_tool
-from app.controller.files_controller import kb_exist
 from app.models import Conversation
 
 from db.curds import (
@@ -31,6 +30,7 @@ from db.curds import (
     query_chunk_with_id,
     add_conversation,
     query_conversation,
+    get_kb_hash_name,
 )
 chatglm = LLMChatGLM(api_key=CHATGLM_API_KEY, model_name="glm-4")
 qwen = LLMQwen(api_key=QWEN_API_KEY, model_name="qwen-max")
@@ -40,17 +40,6 @@ router = APIRouter()
 # [TODO] 封装redis
 from app.controller.users_controller import redis 
 
-@router.get("/chat/sessions", summary="获取会话列表")
-async def get_chat_sessions(
-    user: User = Depends(get_current_user)
-) -> BaseResponse:
-    convs = await query_conversation(user_id=user.id)
-
-    return BaseResponse(
-        code=200,
-        message="success",
-        data=[conv.name for conv in convs]
-    )
 
 '''创建会话'''
 @router.post("/chat/sessions", summary="创建会话")
@@ -62,24 +51,25 @@ async def create_chat(
     创建会话，在内存中和redis中创建user.name, chat_session.topic
     redis hset name:conversation_{user.name} key:{chat_session.topic}
     """
-    key_string = f'{user.name}_{chat_session.topic}'
+    uuid_string = f'{user.name}_{chat_session.topic}_{time()}'
     redis_name = f'conversation:{user.name}'
-    conv_uuid = str(uuid.uuid5(uuid.NAMESPACE_OID, key_string))
-    messages = [
-        {'role': 'system', 'content': 'You are a helpful assistant.'}
-    ]
+    conv_uuid = str(uuid.uuid5(uuid.NAMESPACE_OID, uuid_string))
+    messages = []
     
     await redis.hset(redis_name, conv_uuid, json.dumps(messages))
 
     # 写入conversation表中
-    conv = await add_conversation(name=chat_session, conv_uuid=conv_uuid, user_id=user.id)
+    conv: Conversation = await add_conversation(name=chat_session, conv_uuid=conv_uuid, user_id=user.id)
 
     return BaseResponse(
         code=200,
         message="success",
         data={
             "mask" : {
-                "name" : chat_session.topic,
+                "conversation": {
+                    "id": conv.conv_uuid,
+                    "name": conv.name,
+                },
                 "modelConfig" : {
                     "max_tokens" : 2000,
                     "model" : "glm-4",
@@ -90,47 +80,66 @@ async def create_chat(
     )
 
 
+
+'''获取用户所有会话'''
+@router.get("/chat/sessions", summary="获取用户会话列表")
+async def get_chat_sessions(
+    user: User = Depends(get_current_user)
+) -> BaseResponse:
+    convs: List[Conversation] = await query_conversation(user_id=user.id)
+
+    return BaseResponse(
+        code=200,
+        message="success",
+        data=[
+            {
+                "id": conv.conv_uuid,
+                "name": conv.name,
+            } for conv in convs
+        ]
+    )
+
+
+
 @router.post("/chat/history", summary="获取历史对话记录")
 async def get_chat_history(
-    chat_session: ChatSession,
+    item: ChatHistoryRequest,
     user: User = Depends(get_current_user)
 ) -> BaseResponse:
     """
     创建会话，在内存中和redis中创建user.name, chat_session.topic
     redis hset name:conversation_{user.name} key:{chat_session.topic}
     """
-    key_string = f'{user.name}_{chat_session.topic}'
     redis_name = f'conversation:{user.name}'
-    conv_uuid = str(uuid.uuid5(uuid.NAMESPACE_OID, key_string))
 
-    history = await redis.hget(redis_name, conv_uuid)
+    history = await redis.hget(redis_name, item.uuid)
     return BaseResponse(
         code=200,
         message="success",
         data=history
     )
 
-@router.post("/chat/completions")
+@router.post("/chat/completions", summary="大语言模型问答接口")
 async def completion(
-    model: Annotated[str, Body(...)],
-    question: Annotated[str, Body(...)]
+    item: QAItem,
+    # user: User = Depends(get_current_user)
 ):
     """
     大语言模型问答接口
     """
     messages = [
         {'role': 'system', 'content': 'You are a helpful assistant.'},
-        {'role': 'user', 'content': question}
+        {'role': 'user', 'content': item.question}
     ]
-    resp = chatglm.invoke(messages=messages)
-
+    resp: Dict = chatglm.invoke(messages=messages)
+    
     return BaseResponse(
         code=200,
         message="success",
         data=resp
     )
 
-@router.post("/sse/chat/completions")
+@router.post("/sse/chat/completions", summary="大语言模型问答接口，流式输出")
 async def sse_completion(
     model: Annotated[str, Body(...)],
     question: Annotated[str, Body(...)],
@@ -176,15 +185,17 @@ def bm25_search(question: str, kb_name: str):
 @router.post("/sse/chat/knowledge")
 async def chat_with_knowledge(
     item: RAGQuestion,
-    # user: User = Depends(get_current_user)
+    user: User = Depends(get_current_user)
 ) -> BaseResponse:
-    if not await kb_exist(item.kb_name):
+    """根据知识库名称获取hash_name"""
+    hash_name = await get_kb_hash_name(item.kb_name, user.id)
+    if hash_name is None:
         return BaseResponse(code=404, msg="failure", data="知识库不存在")
 
     query_vector = embedding.encode(item.question)[0].tolist()
 
-    vector_result = vector_search(query_vector, item.kb_name)
-    bm25_result = bm25_search(item.question, item.kb_name)
+    vector_result = vector_search(query_vector, hash_name)
+    bm25_result = bm25_search(item.question, hash_name)
     
     uuids = list(set(vector_result + bm25_result))
 
@@ -220,11 +231,7 @@ async def chat_with_knowledge(
 
     return EventSourceResponse(chatglm.sse_invoke(messages=messages))
 
-    return BaseResponse(
-        code=200,
-        message="success",
-        data=top[0]
-    )
+    return BaseResponse(code=200, message="success", data=top[0])
 
 @router.post("/chat/tools")
 async def chat_with_tools(

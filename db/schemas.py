@@ -1,8 +1,16 @@
-from pydantic import BaseModel, EmailStr, Field, field_validator
-import re
-from typing import Optional, Union
-from app.models import QAType
 
+import re
+from app.models import QAType
+from typing import Optional, Union, List
+from pydantic import BaseModel, EmailStr, Field, field_validator
+
+
+class QAItem(BaseModel):
+    model: str
+    question: str
+    stream: bool
+    conv_uuid: str
+    kb_name: List[str]
 
 class RAGQuestion(BaseModel):
     question: str
@@ -56,6 +64,10 @@ import uuid
 class ChatSession(BaseModel):
     topic: Optional[str] = "default"
 
+
+class ChatHistoryRequest(BaseModel):
+    uuid: uuid.UUID
+    name: Optional[str] = "default"
 
 class Token(BaseModel):
     access_token: str

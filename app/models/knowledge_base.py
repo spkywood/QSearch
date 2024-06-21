@@ -6,7 +6,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 class KnowledgeBase(BaseTable):
     __tablename__ = "knowledge_bases"
 
-    name: Mapped[str] = mapped_column(String(20), nullable=False, comment='知识库名称')
+    name: Mapped[str] = mapped_column(String(100), nullable=False, comment='知识库名称')
+    hash_name: Mapped[str] = mapped_column(String(20), nullable=False, comment='知识库哈希名称')
     icon: Mapped[str] = mapped_column(String(100), nullable=False, comment='知识库图标')
     desc: Mapped[str] = mapped_column(String(200), nullable=False, comment='知识库描述')
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey('users.id'), nullable=False, comment='用户ID')

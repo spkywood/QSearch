@@ -42,7 +42,7 @@ class MinioClient(metaclass=Singleton):
         try:
             self.client.remove_bucket(bucket_name)
         except Exception as e:
-            logger.exception(f'delete bucket {bucket_name} exception {e}')
+            logger.info(f'delete bucket {bucket_name} exception {e}')
 
 
     def upload_data(self, bucket_name, obj_name, data, size):
