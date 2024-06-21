@@ -19,6 +19,7 @@ from sqlalchemy.orm import (
 class Conversation(BaseTable):
     __tablename__ = "conversations"
 
-    topic_name: Mapped[str] = mapped_column(String(255), nullable=True, default='default')
-    user_id: Mapped[int] = mapped_column(Integer)
-    history: Mapped[dict] = mapped_column(JSON)
+    name: Mapped[str] = mapped_column(String(255), nullable=True, default='default')
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey('users.id', ondelete='CASCADE'))
+
+    user = relationship('User', back_populates='conversations')

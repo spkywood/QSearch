@@ -53,8 +53,6 @@ text_splitter = RecursiveCharacterTextSplitter(
 async def kb_exist(kb_name: str):
     return minio_client.bucket_exists(kb_name)
 
-
-
 async def save_files_in_threadpool(files: List[UploadFile], kb_name: str, override: bool= True): 
     def save_file(file: UploadFile, kb_name: str, override: bool=True) -> Dict:
         """

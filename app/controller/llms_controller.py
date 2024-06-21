@@ -11,39 +11,79 @@
 
 from typing import Annotated
 from fastapi import APIRouter, Body, Depends
-from fastapi.responses import StreamingResponse
 from sse_starlette.sse import EventSourceResponse
-
-
+import json
+import uuid
+from time import time
 from common import logger
 from app.models import User
 from app.controller import get_current_user
 from db.schemas import ChatSession, RAGQuestion
-from common.response import BaseResponse, ListResponse
+from common.response import BaseResponse
 from app.runtime import LLMChatGLM, LLMQwen
 from setting import CHATGLM_API_KEY, QWEN_API_KEY
 from tools.register import tools, dispatch_tool
-from app.controller.parsers_controller import kb_exist
+from app.controller.files_controller import kb_exist
+from app.models import Conversation
 
-from db.curds import query_chunk_with_uuid, query_chunk_with_id
-
+from db.curds import (
+    query_chunk_with_uuid, 
+    query_chunk_with_id,
+    add_conversation,
+    query_conversation,
+)
 chatglm = LLMChatGLM(api_key=CHATGLM_API_KEY, model_name="glm-4")
 qwen = LLMQwen(api_key=QWEN_API_KEY, model_name="qwen-max")
 
 router = APIRouter()
 
+# [TODO] 封装redis
+from app.controller.users_controller import redis 
+
+@router.get("/chat/sessions")
+async def create_chat(
+    user: User = Depends(get_current_user)
+) -> BaseResponse:
+    convs = await query_conversation(user_id=user.id)
+
+    return BaseResponse(
+        code=200,
+        message="success",
+        data=convs
+    )
+
+
 @router.post("/chat/sessions")
-async def create_chat(chat_sess: ChatSession):
+async def create_chat(
+    chat_session: ChatSession,
+    user: User = Depends(get_current_user)
+) -> BaseResponse:
+    """
+    创建会话，在内存中和redis中创建user.name, chat_session.topic
+    redis hset name:conversation_{user.name} key:{chat_session.topic}
+    """
+    key_string = f'{chat_session.topic}_{time()}'
+    redis_name = f'conversation:{user.name}'
+    redis_key = str(uuid.uuid5(uuid.NAMESPACE_DNS, key_string))
+    messages = [
+        {'role': 'system', 'content': 'You are a helpful assistant.'}
+    ]
+    
+    await redis.hset(redis_name, redis_key, json.dumps(messages))
+
+    # 写入conversation表中
+    conv = await add_conversation(name=redis_key, user_id=user.id)
+
     return BaseResponse(
         code=200,
         message="success",
         data={
             "mask" : {
-                "name" : chat_sess.topic,
+                "name" : chat_session.topic,
                 "modelConfig" : {
                     "max_tokens" : 2000,
                     "model" : "glm-4",
-                    "temperature" : 8.0,
+                    "temperature" : 0.7,
                 }
             }
         }

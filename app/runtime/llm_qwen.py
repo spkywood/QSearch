@@ -37,7 +37,7 @@ class LLMQwen(LLM):
             result_format='message',  # 将返回结果格式设置为 message
             max_tokens=2000,  # 设置最大令牌数为 100
             top_p=0.7,
-            temperature=0.8,
+            temperature=0.7,
             stream=stream,
             tools=tools,
             incremental_output=True if stream else False  # 增量式流式输出

@@ -16,3 +16,4 @@ class KnowledgeBase(BaseTable):
     user = relationship("User", back_populates="knowledge_bases")
 
     config = relationship('KnowledgeBaseConfig', back_populates='knowledge_base', cascade='all, delete-orphan', uselist=False)
+    

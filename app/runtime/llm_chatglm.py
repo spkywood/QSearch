@@ -39,7 +39,7 @@ class LLMChatGLM(LLM):
                 messages=messages,
                 max_tokens=2000,  # 设置最大令牌数为 100
                 top_p=0.7,
-                temperature=0.8,
+                temperature=0.7,
                 stream=stream,
                 tools=tools
             )
@@ -61,7 +61,7 @@ class LLMChatGLM(LLM):
                 messages=messages,
                 max_tokens=2000,  # 设置最大令牌数为 100
                 top_p=0.7,
-                temperature=0.8,
+                temperature=0.7,
                 stream=stream,
                 tools=tools
             )

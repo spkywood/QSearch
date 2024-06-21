@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator
 import re
-from typing import Annotated, Union
+from typing import Optional, Union
 from app.models import QAType
 
 
@@ -52,9 +52,9 @@ class UserCreate(BaseModel):
             raise ValueError('密码必须包含至少一个数字')
         return v
     
+import uuid
 class ChatSession(BaseModel):
-    user_name: str
-    topic: str
+    topic: Optional[str] = "default"
 
 
 class Token(BaseModel):

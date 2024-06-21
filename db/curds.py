@@ -16,7 +16,8 @@ from sqlalchemy import and_
 
 from app.models import (
     User, KnowledgeBase, FileChunk, KnowledgeFile,
-    Guide, QAType
+    Guide, QAType,
+    Conversation
 )
 from db.session import with_session
 from common import logger
@@ -187,3 +188,24 @@ async def query_chunk_with_id(session: AsyncSession, file_id: int , chunk_id: in
     result = await session.execute(stmt)
     text = result.scalar_one_or_none()
     return text if text else ""
+
+
+@with_session
+async def add_conversation(session: AsyncSession, name: str, user_id: int) -> Conversation:
+    """   
+    添加会话
+    """
+    conversation = Conversation(name=name, user_id=user_id)
+    session.add(conversation)
+    await session.commit()
+    return conversation
+
+
+@with_session
+async def query_conversation(session: AsyncSession, user_id: int) -> List[Conversation]:
+    """
+    查询用户所有会话
+    """
+    query = await session.execute(select(Conversation).where(Conversation.user_id == user_id))
+    conversations = query.scalars().all()
+    return conversations

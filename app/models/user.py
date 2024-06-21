@@ -25,3 +25,5 @@ class User(BaseTable):
     password: Mapped[str] = mapped_column(String(500))
 
     knowledge_bases = relationship("KnowledgeBase", back_populates="user")
+
+    conversations = relationship("Conversation", back_populates="user")
