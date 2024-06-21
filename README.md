@@ -2,6 +2,8 @@
 
 QSearch个人开源的 <code>LLM</code> 和 <code>RAG</code> 应用，支持本地模型和商用模型调用，整体实现方案使用高级 RAG 技术方案，主要使用召回预处理，多路召回，召回后处理，Reranker 等。
 
+![广义的RAG问答链路](docs/images/rag_chain.png)
+
 [OpenAI分享他们在RAG技术的最佳实践](https://threadreaderapp.com/thread/1796502273197314545.html?utm_campaign=topunroll)
 
 
