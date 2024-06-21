@@ -15,13 +15,11 @@ from app.controller import (
     users_controller,
     files_controller,
     kb_controller,
-    parsers_controller,
 )
 
 
 def mount_app_routers(app: FastAPI):
-    app.include_router(users_controller.router, prefix='/api/v1', tags=['users'])
+    app.include_router(users_controller.router, prefix='/api/v1', tags=['Users'])
     app.include_router(llms_controller.router, prefix='/api/v1', tags=['llms'])
-    app.include_router(files_controller.router, prefix='/api/v1', tags=['files'])
-    app.include_router(kb_controller.router, prefix='/api/v1', tags=['knowledge base'])
-    app.include_router(parsers_controller.router, prefix='/api/v1', tags=['Parser Doc'])
+    app.include_router(files_controller.router, prefix='/api/v1', tags=['Documents'])
+    app.include_router(kb_controller.router, prefix='/api/v1', tags=['Knowledge Base'])
