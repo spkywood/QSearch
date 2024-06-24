@@ -44,6 +44,7 @@ python startup.py
 - mysql     系统数据库
 - minio     对象存储
 - es        全文检索
+- redis     系统缓存，对话缓存等
 
 ## 高级特性
 
@@ -55,11 +56,12 @@ python startup.py
 
 - [ ] UI
 - [x] Document解析
-- [ ] Agent
+- [x] Agent：知识库 Agent，工具调用 Agent
 - [ ] COT 
 - [ ] 查询路由
 - [ ] RAPTOR
 - [x] Docker
+- [x] 对话缓存
 
 
 ## PS 
