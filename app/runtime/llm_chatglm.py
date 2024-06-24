@@ -19,6 +19,7 @@ from zhipuai import ZhipuAI
 import os
 import json
 
+from app.controller.users_controller import redis
 class LLMChatGLM(LLM):
     def __init__(self, 
                  api_key: str = None, 
@@ -49,11 +50,14 @@ class LLMChatGLM(LLM):
         except Exception as e:
             logger.error(e)
             return "llm server connection error."
-        
-    def sse_invoke(self, 
+
+    async def asse_invoke(self, 
                messages: Union[str, List[Dict[str, str]]], 
                tools : Optional[object] = None,  
-               stream: bool = True
+               stream: bool = True,
+               history: List[Dict[str, str]] = [],
+               redis_name: str = None, 
+               redis_key: str = None
     ):
         try:
             response = self.client.chat.completions.create(
@@ -66,9 +70,54 @@ class LLMChatGLM(LLM):
                 tools=tools
             )
 
+            assistant = {
+                "role": "assistant",
+                "content": ""
+            }
             for chunk in response:
                 delta = chunk.choices[0].delta
-                yield json.dumps(delta.model_dump(), ensure_ascii=False)
+                delta_content = delta.model_dump()
+                assistant['content'] += delta_content["content"]
+                yield json.dumps(delta_content, ensure_ascii=False)
+
+            history.append(assistant)
+            await redis.hset(redis_name, redis_key, json.dumps(history))
+
+        except Exception as e:
+            logger.error(e)
+            yield "llm server connection error."
+
+    def sse_invoke(self, 
+               messages: Union[str, List[Dict[str, str]]], 
+               tools : Optional[object] = None,  
+               stream: bool = True,
+               history: List[Dict[str, str]] = [],
+               redis_name: str = None, 
+               redis_key: str = None
+    ):
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model_name,
+                messages=messages,
+                max_tokens=2000,  # 设置最大令牌数为 100
+                top_p=0.7,
+                temperature=0.7,
+                stream=stream,
+                tools=tools
+            )
+
+            assistant = {
+                "role": "assistant",
+                "content": ""
+            }
+            for chunk in response:
+                delta = chunk.choices[0].delta
+                delta_content = delta.model_dump()
+                assistant['content'] += delta_content["content"]
+                yield json.dumps(delta_content, ensure_ascii=False)
+
+            history.append(assistant)
+            logger.info(f"history: {history}")
 
         except Exception as e:
             logger.error(e)

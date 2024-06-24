@@ -12,22 +12,19 @@ import string
 from fastapi import APIRouter, Depends, HTTPException, status
 
 
-from common.response import BaseResponse
 from app.models import User
+from common.response import BaseResponse
 from db import minio_client, es_client, milvus_client
 from db.schemas import Token, KnowledgeCreate, GuideCreate
-from db.curds import (
-    add_knowledge_base, query_guides, add_guide,
+from app.controller import get_current_user
+from db.curds import ( 
+    add_guide,
+    query_guides,
+    add_knowledge_base, 
     query_knowledge_base
 
 )
-from app.controller import (
-    get_current_user, is_root_user,
-    get_password_hash,
-    create_access_token,
-    ACCESS_TOKEN_EXPIRE_MINUTES,
-    authenticate_user
-)
+
 
 router = APIRouter()
 
@@ -60,7 +57,7 @@ async def create_kb(
 
     minio_client.create_bucket(hash_name)
     es_client.create_index(hash_name)
-    milvus_client.create_collection(kb.name, dim=1024)
+    milvus_client.create_collection(hash_name, dim=1024)
 
     knowledgebase = await add_knowledge_base(kb.name, hash_name, kb.icon, kb.desc, user.id)
 

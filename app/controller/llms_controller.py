@@ -59,7 +59,8 @@ async def create_chat(
     await redis.hset(redis_name, conv_uuid, json.dumps(messages))
 
     # 写入conversation表中
-    conv: Conversation = await add_conversation(name=chat_session, conv_uuid=conv_uuid, user_id=user.id)
+    conv: Conversation = await add_conversation(
+        name=chat_session.topic, conv_uuid=conv_uuid, user_id=user.id)
 
     return BaseResponse(
         code=200,
@@ -187,7 +188,7 @@ async def chat_with_knowledge(
     item: RAGQuestion,
     user: User = Depends(get_current_user)
 ) -> BaseResponse:
-    """根据知识库名称获取hash_name"""
+    '''根据知识库名称获取hash_name'''
     hash_name = await get_kb_hash_name(item.kb_name, user.id)
     if hash_name is None:
         return BaseResponse(code=404, msg="failure", data="知识库不存在")
@@ -218,19 +219,28 @@ async def chat_with_knowledge(
         })
     # [TODO] 
     # 1. 检查用户是否具有访问知识库的权限
-
     scores = reranker.compute_score(item.question, knowledges)
     top = sorted(scores, key=lambda x: x['score'], reverse=True)
 
     prompt = knowledge_qa_prompt(top[0]['document'], item.question)
     
-    messages = [
-        {'role': 'system', 'content': '你是一个知识库问答助手，回答用户的问题。如果知识库中没有答案，请回答“我不知道”。'},
-        {'role': 'user', 'content': prompt}
-    ]
+    redis_name = f'conversation:{user.name}'
+    history = await redis.hget(redis_name, item.conversation)
+    history: List = json.loads(history)
 
-    return EventSourceResponse(chatglm.sse_invoke(messages=messages))
+    question = {'role': 'user', 'content': prompt}
+    messages = [question]
 
+    history.append({'role': 'user', 'content': item.question})
+
+    return EventSourceResponse(
+        chatglm.asse_invoke(
+            messages=messages, 
+            history=history, 
+            redis_name=redis_name, 
+            redis_key=item.conversation
+        )
+    )
     return BaseResponse(code=200, message="success", data=top[0])
 
 @router.post("/chat/tools")
@@ -243,7 +253,7 @@ async def chat_with_tools(
         {'role': 'user', 'content': question}
     ]
     
-    model_response = chatglm.invoke(messages=messages, tools=tools, stream=stream)
+    model_response = chatglm.invoke(messages=messages, tools=tools)
 
     if isinstance(model_response, dict) and model_response.get('tool_calls'):
         tool_name = model_response['tool_calls'][0]['function']['name']

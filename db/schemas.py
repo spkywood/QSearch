@@ -15,6 +15,7 @@ class QAItem(BaseModel):
 class RAGQuestion(BaseModel):
     question: str
     kb_name: str
+    conversation: Optional[str] = None
     
 
 class GuideCreate(BaseModel):

@@ -53,7 +53,7 @@ class MinioClient(metaclass=Singleton):
             raise Exception(f"{e}.")
         
     def get_obj_url(self, bucket_name, obj_name):
-        url = self.client.presigned_get_object(bucket_name, obj_name)
+        # url = self.client.presigned_get_object(bucket_name, obj_name)
         return self.client.presigned_get_object(bucket_name, obj_name)
 
 from setting import MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY

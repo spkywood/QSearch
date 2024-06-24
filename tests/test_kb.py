@@ -6,14 +6,11 @@ def main(kb_name):
     milvus_client.client.drop_collection(kb_name)
     es_client.delete_index(kb_name)
 
-    minio_client.create_bucket(kb_name)
-    es_client.create_index(kb_name)
-    milvus_client.create_collection(kb_name, dim=1024)
+    # minio_client.create_bucket(kb_name)
+    # es_client.create_index(kb_name)
+    # milvus_client.create_collection(kb_name, dim=1024)
+    return milvus_client.list_collections()
 
 if __name__ == '__main__':
-    import random
-    import string
-    a = ''.join(random.choices(string.ascii_lowercase, k=4))
-    b = ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
-    print(a+b)
-
+    
+    print(main('hgbfp5cd2qcs'))
