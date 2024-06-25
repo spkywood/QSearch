@@ -7,11 +7,16 @@ import asyncio
 redis = Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
 
 async def get_redis():
-    redis_name = 'conversation:test'
-    key = '6c1029a1-231a-59b3-9458-9f7b0261d942'
-    a = await redis.hget(redis_name, key)
-    a = json.loads(a)
-    print(a)
+    # redis_name = 'conversation:test'
+    # key = '6c1029a1-231a-59b3-9458-9f7b0261d942'
+    # a = await redis.hget(redis_name, key)
+    # a = json.loads(a)
+    # print(a)
+
+    
+    context = await redis.hget('question:test', '01de7279-7f12-56df-bf12-7ac4dea86e06')
+    a = json.loads(context)
+    print(context)
 
 if __name__ == '__main__':
     # 异步 main 函数

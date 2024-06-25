@@ -57,7 +57,8 @@ class LLMChatGLM(LLM):
                stream: bool = True,
                history: List[Dict[str, str]] = [],
                redis_name: str = None, 
-               redis_key: str = None
+               redis_key: str = None,
+               quuid: str = None,
     ):
         try:
             response = self.client.chat.completions.create(
@@ -78,6 +79,7 @@ class LLMChatGLM(LLM):
                 delta = chunk.choices[0].delta
                 delta_content = delta.model_dump()
                 assistant['content'] += delta_content["content"]
+                delta_content["quuid"] = quuid
                 yield json.dumps(delta_content, ensure_ascii=False)
 
             history.append(assistant)

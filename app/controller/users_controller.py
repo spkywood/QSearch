@@ -45,8 +45,8 @@ redis = Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
 def generate_captcha_text(length=4):
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
-@router.get("/captcha")
-async def get_captcha():
+@router.get("/captcha", summary="获取图片验证码")
+async def get_captcha() -> BaseResponse:
     captcha_text = generate_captcha_text()
     captcha_id = ''.join(random.choices(string.ascii_lowercase + string.digits, k=16))
     await redis.setex(captcha_id, 60, captcha_text)  # Captcha valid for 1 minutes
@@ -55,9 +55,14 @@ async def get_captcha():
     buffer = io.BytesIO()
     image.save(buffer, format='PNG')
     image_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
-    return {"captcha_id": captcha_id, "captcha_image": image_base64}
+    return BaseResponse(
+        code=200,
+        message="success",
+        data={"captcha_id": captcha_id, "captcha_image": image_base64}
+    )
 
-@router.get("/users", description="获取所有用户信息")
+
+@router.get("/users", description="获取所有用户信息", include_in_schema=False)
 async def get_users(user: User = Depends(get_current_user)):
     if not is_root_user(user):
         raise HTTPException(
@@ -72,7 +77,7 @@ async def get_users(user: User = Depends(get_current_user)):
         data=[str(user) for user in users]
     )
 
-@router.get("/users/{username}")
+@router.get("/users/{username}", summary="获取用户信息", include_in_schema=False)
 async def get_user(
     username: str,
     user: User = Depends(get_current_user)
@@ -91,7 +96,7 @@ async def get_user(
         data=str(user)
     )
 
-@router.post("/users/create")
+@router.post("/users/create", summary="创建用户", include_in_schema=False)
 async def create_user(user: UserCreate):
     password = get_password_hash(user.password)
     _user = await add_user(user.name, user.email, user.phone, password)
@@ -106,10 +111,10 @@ async def create_user(user: UserCreate):
             data=data
         )
 
-@router.post("/users/login")
+@router.post("/users/login", summary="用户登录", include_in_schema=True)
 async def login(
     user_login: UserLogin,
-) -> Token:
+) -> BaseResponse:
     captcha_text: str = await redis.get(user_login.captcha_id)
     if not captcha_text or captcha_text.lower() != user_login.captcha.lower():
         raise HTTPException(
@@ -128,4 +133,11 @@ async def login(
     access_token = create_access_token(
         data={"sub": user.name}, expires_delta=access_token_expires
     )
-    return Token(access_token=access_token, token_type="bearer")
+    return BaseResponse(
+        code=200,
+        message="success",
+        data = {
+            "access_token": access_token,
+            "token_type": "bearer",
+        }
+    )

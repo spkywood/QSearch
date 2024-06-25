@@ -98,7 +98,7 @@ async def upload_docs(
     )
 
 
-@router.post("/parser/docs")
+@router.post("/parser/docs", summary="文档解析接口")
 async def doc_parsers(
     file: bytes = File(..., description="上传文件接口"),
     filename: str = Form(..., description="文件名", examples=["example.pdf"]),

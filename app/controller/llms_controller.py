@@ -42,7 +42,7 @@ from app.controller.users_controller import redis
 
 
 '''创建会话'''
-@router.post("/chat/sessions", summary="创建会话")
+@router.post("/chat/sessions", summary="创建会话", include_in_schema=True)
 async def create_chat(
     chat_session: ChatSession,
     user: User = Depends(get_current_user)
@@ -83,7 +83,7 @@ async def create_chat(
 
 
 '''获取用户所有会话'''
-@router.get("/chat/sessions", summary="获取用户会话列表")
+@router.get("/chat/sessions", summary="获取用户会话列表", include_in_schema=False)
 async def get_chat_sessions(
     user: User = Depends(get_current_user)
 ) -> BaseResponse:
@@ -102,7 +102,7 @@ async def get_chat_sessions(
 
 
 
-@router.post("/chat/history", summary="获取历史对话记录")
+@router.post("/chat/history", summary="获取历史对话记录", include_in_schema=False)
 async def get_chat_history(
     item: ChatHistoryRequest,
     user: User = Depends(get_current_user)
@@ -120,7 +120,7 @@ async def get_chat_history(
         data=history
     )
 
-@router.post("/chat/completions", summary="大语言模型问答接口")
+@router.post("/chat/completions", summary="大语言模型问答接口", include_in_schema=False)
 async def completion(
     item: QAItem,
     # user: User = Depends(get_current_user)
@@ -183,7 +183,7 @@ def bm25_search(question: str, kb_name: str):
     results = es_client.search(kb_name, question)
     return [result['_source']['chunk_uuid'] for result in results]
 
-@router.post("/sse/chat/knowledge")
+@router.post("/sse/chat/knowledge", summary="知识库检索问答RAG，流式输出")
 async def chat_with_knowledge(
     item: RAGQuestion,
     user: User = Depends(get_current_user)
@@ -201,8 +201,8 @@ async def chat_with_knowledge(
     uuids = list(set(vector_result + bm25_result))
 
     knowledges = []
-    for uuid in uuids:
-        chunk = await query_chunk_with_uuid(uuid)
+    for _uuid in uuids:
+        chunk = await query_chunk_with_uuid(_uuid)
 
         file_id = chunk['file_id']
         chunk_id = chunk['chunk_id']
@@ -212,7 +212,7 @@ async def chat_with_knowledge(
         text = prev_text.strip() + chunk['chunk'].strip() + next_text.strip()
         # knowledges.append(text)
         knowledges.append({
-            "uuid" : uuid,
+            "uuid" : _uuid,
             "kb_name" : item.kb_name,
             "file_name" : chunk['file_name'],
             "document" : text,
@@ -221,6 +221,21 @@ async def chat_with_knowledge(
     # 1. 检查用户是否具有访问知识库的权限
     scores = reranker.compute_score(item.question, knowledges)
     top = sorted(scores, key=lambda x: x['score'], reverse=True)
+
+    '''检索结果写入redis'''
+    # 每次提问生成uuid
+    uuid_string = f'{item.question}_{time()}'
+    quuid = str(uuid.uuid5(uuid.NAMESPACE_OID, uuid_string))
+    qname = f'question:{user.name}'
+    query_content = [{
+        "chunk" : _t['document'],
+        "minio_url" : minio_client.get_obj_url(hash_name, _t['file_name']),
+
+    } for _t in top]
+    logger.info(f'qname:{qname} quuid:{quuid} query_content:{query_content}')
+    await redis.hset(qname, quuid, json.dumps(query_content, indent=4, ensure_ascii=False))
+    '''检索结果写入redis'''
+
 
     prompt = knowledge_qa_prompt(top[0]['document'], item.question)
     
@@ -238,12 +253,26 @@ async def chat_with_knowledge(
             messages=messages, 
             history=history, 
             redis_name=redis_name, 
-            redis_key=item.conversation
+            redis_key=item.conversation,
+            quuid=quuid,
         )
     )
     return BaseResponse(code=200, message="success", data=top[0])
 
-@router.post("/chat/tools")
+
+@router.get("/rag/content", summary="获取检索结果")
+async def get_rag_content(
+    quuid: str,
+    # user: User = Depends(get_current_user)
+) -> BaseResponse:
+    '''根据知识库名称获取hash_name'''
+    # context = await redis.hget(f'question:{user.name}', quuid)
+    context = await redis.hget('question:test', quuid)
+    if context is None:
+        return BaseResponse(code=404, msg="failure", data="知识库不存在")
+    return BaseResponse(code=200, msg="success", data=json.loads(context))
+
+@router.post("/chat/tools", summary="工具调用", include_in_schema=False)
 async def chat_with_tools(
     model: Annotated[str, Body(...)],
     question: Annotated[str, Body(...)]
@@ -271,7 +300,7 @@ async def chat_with_tools(
         data=result
     )
 
-@router.post("/sse/chat/tools")
+@router.post("/sse/chat/tools", summary="工具调用", include_in_schema=False)
 async def sse_chat_with_tools(
     model: Annotated[str, Body(...)],
     question: Annotated[str, Body(...)],

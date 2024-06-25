@@ -36,7 +36,7 @@ def hash_kb_name():
 
 
 '''创建知识库'''
-@router.post("/knowledge_base", description="创建知识库")
+@router.post("/knowledge_base", summary="创建知识库")
 async def create_kb(
     kb: KnowledgeCreate, 
     user: User = Depends(get_current_user)
@@ -73,8 +73,8 @@ async def create_kb(
 
 
 '''获取知识库'''
-@router.get("/knowledge_base", description="创建知识库")
-async def create_kb(
+@router.get("/knowledge_base", description="获取知识库", include_in_schema=False)
+async def query_kb(
     user: User = Depends(get_current_user)
 ) -> BaseResponse:
     """
@@ -97,7 +97,7 @@ async def create_kb(
         } for kb in kbs]
     )
 
-@router.get("/guides", description="获取引导词")
+@router.get("/guides", summary="获取引导词")
 async def get_guides(
     user: User = Depends(get_current_user)
 ) -> BaseResponse:
@@ -126,7 +126,7 @@ async def get_guides(
     )
 
 
-@router.post("/guides", description="增加引导词")
+@router.post("/guides", summary="增加引导词")
 async def get_guides(
     guide: GuideCreate,
     user: User = Depends(get_current_user)
