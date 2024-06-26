@@ -117,23 +117,13 @@ async def login(
 ) -> BaseResponse:
     captcha_text: str = await redis.get(user_login.captcha_id)
     if not captcha_text or captcha_text.lower() != user_login.captcha.lower():
-        return BaseResponse(
-            code=401,
-            message="Invalid captcha",
-            data=None
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid captcha",
         )
-        # raise HTTPException(
-        #     status_code=status.HTTP_401_UNAUTHORIZED,
-        #     detail="Invalid captcha",
-        # )
 
     user: User = await authenticate_user(user_login.name, user_login.password)
     if not user:
-        return BaseResponse(
-            code=401,
-            message="Incorrect username or password",
-            data=None
-        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",

@@ -1,11 +1,11 @@
 import os
 import json
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from typing import List, Any
 from datetime import timedelta
 from pydantic import BaseModel, Field
-from starlette.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
+
 
 from demo.constants import hydrometric_rhourrt_list
 from demo.oauth import (
@@ -46,10 +46,9 @@ app = FastAPI(
 async def oauth_login(item: OAuthLogin):
     secretKey = await authenticate(item.accessKey, item.secretKey)
     if not secretKey:
-        return BaseResponse(
-            code=401,
-            msg="Invalid access key or secret key",
-            data=None
+        return HTTPException(
+            status_code=401,
+            detail="Incorrect username or password",
         )
     
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)

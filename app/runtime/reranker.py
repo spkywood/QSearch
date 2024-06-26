@@ -37,6 +37,7 @@ class Reranker:
                 "document": documents[i]['document'],
                 "uuid" : documents[i]['uuid'],
                 "kb_name" : documents[i]['kb_name'],
+                "file_id" : documents[i]['file_id'],
                 "file_name" : documents[i]['file_name'],
             })
         return sentence_scores
