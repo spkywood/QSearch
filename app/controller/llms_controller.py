@@ -38,7 +38,8 @@ qwen = LLMQwen(api_key=QWEN_API_KEY, model_name="qwen-max")
 router = APIRouter()
 
 # [TODO] 封装redis
-from app.controller.users_controller import redis 
+# from app.controller.users_controller import redis 
+from db.redis_client import redis
 
 
 '''创建会话'''
@@ -228,11 +229,12 @@ async def chat_with_knowledge(
     quuid = str(uuid.uuid5(uuid.NAMESPACE_OID, uuid_string))
     qname = f'question:{user.name}'
     query_content = [{
+        "file_name" : _t['file_name'],
         "chunk" : _t['document'],
-        "minio_url" : minio_client.get_obj_url(hash_name, _t['file_name']),
+        "file_url" : minio_client.get_obj_url(hash_name, _t['file_name']),
 
     } for _t in top]
-    logger.info(f'qname:{qname} quuid:{quuid} query_content:{query_content}')
+    # logger.info(f'qname:{qname} quuid:{quuid} query_content:{query_content}')
     await redis.hset(qname, quuid, json.dumps(query_content, indent=4, ensure_ascii=False))
     '''检索结果写入redis'''
 

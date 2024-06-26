@@ -23,6 +23,7 @@ from app.models import User
 from db.curds import query_user_with_name
 from common import logger
 from setting import APP_SECRET_KEY
+from common.response import BaseResponse
 
 # 秘钥、算法和令牌过期时间
 # openssl rand -hex 32
@@ -65,11 +66,11 @@ def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None
 
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+    # credentials_exception = HTTPException(
+    #     status_code=status.HTTP_401_UNAUTHORIZED,
+    #     detail="Could not validate credentials",
+    #     headers={"WWW-Authenticate": "Bearer"},
+    # )
 
     expired_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -80,15 +81,35 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
+            return BaseResponse(
+                code=401,
+                msg="Could not validate credentials",
+                data=None
+            )
             raise credentials_exception
         token_data = TokenData(username=username)
     except InvalidKeyError:
+        return BaseResponse(
+            code=401,
+            msg="Could not validate credentials",
+            data=None
+        )
         raise credentials_exception
     except ExpiredSignatureError:
+        return BaseResponse(
+            code=401,
+            msg="Token expired",
+            data=None
+        )
         raise expired_exception
     
     user: User = await query_user_with_name(username)
     if user is None:
+        return BaseResponse(
+            code=401,
+            msg="Could not validate credentials",
+            data=None
+        )
         raise credentials_exception
     return user
 

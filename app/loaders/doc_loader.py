@@ -1,4 +1,4 @@
-
+import io
 from typing import List
 from langchain_community.document_loaders import UnstructuredFileLoader
 
@@ -20,7 +20,10 @@ class DocLoader(UnstructuredFileLoader):
             import numpy as np
             from rapidocr_onnxruntime import RapidOCR
             ocr = RapidOCR()
-            doc = Document(filepath)
+            if isinstance(filepath, str):
+                doc = Document(filepath)
+            else:
+                doc = Document(io.BytesIO(filepath))
             resp = ""
 
             def iter_block_items(parent):

@@ -19,7 +19,8 @@ from zhipuai import ZhipuAI
 import os
 import json
 
-from app.controller.users_controller import redis
+# from app.controller.users_controller import redis
+from db.redis_client import redis
 class LLMChatGLM(LLM):
     def __init__(self, 
                  api_key: str = None, 

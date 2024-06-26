@@ -5,6 +5,8 @@ demo/download*
 # docker volumes
 docker/volumes
 
+sql/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

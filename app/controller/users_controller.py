@@ -15,7 +15,7 @@ import base64
 import random
 import string
 from datetime import timedelta
-from redis.asyncio import Redis
+# from redis.asyncio import Redis
 from captcha.image import ImageCaptcha
 from fastapi import APIRouter, Depends, HTTPException, status
 
@@ -35,12 +35,12 @@ from app.controller import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     authenticate_user
 )
-
-from setting import REDIS_HOST, REDIS_PORT
+from db.redis_client import redis
+# from setting import REDIS_HOST, REDIS_PORT
 
 router = APIRouter()
 
-redis = Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
+# redis = Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
 
 def generate_captcha_text(length=4):
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
@@ -117,13 +117,23 @@ async def login(
 ) -> BaseResponse:
     captcha_text: str = await redis.get(user_login.captcha_id)
     if not captcha_text or captcha_text.lower() != user_login.captcha.lower():
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid captcha",
+        return BaseResponse(
+            code=401,
+            message="Invalid captcha",
+            data=None
         )
+        # raise HTTPException(
+        #     status_code=status.HTTP_401_UNAUTHORIZED,
+        #     detail="Invalid captcha",
+        # )
 
     user: User = await authenticate_user(user_login.name, user_login.password)
     if not user:
+        return BaseResponse(
+            code=401,
+            message="Incorrect username or password",
+            data=None
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
@@ -133,10 +143,12 @@ async def login(
     access_token = create_access_token(
         data={"sub": user.name}, expires_delta=access_token_expires
     )
+
     return BaseResponse(
         code=200,
         message="success",
         data = {
+            "name" : user.name,
             "access_token": access_token,
             "token_type": "bearer",
         }
