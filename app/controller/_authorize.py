@@ -29,7 +29,7 @@ from common.response import BaseResponse
 # openssl rand -hex 32
 SECRET_KEY = APP_SECRET_KEY
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
+ACCESS_TOKEN_EXPIRE_MINUTES = 6000
 
 # 密码上下文用于哈希和验证
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -68,13 +68,13 @@ def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None
 async def get_current_user(token: str = Depends(oauth2_scheme)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
+        detail="无法验证用户",
         headers={"WWW-Authenticate": "Bearer"},
     )
 
     expired_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail= "Token expired",
+        detail= "用户认证过期，请重新登录",
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
@@ -90,7 +90,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail= "Token validation error",
+            detail= "用户认证过期，请重新登录",
             headers={"WWW-Authenticate": "Bearer"},
         )
     

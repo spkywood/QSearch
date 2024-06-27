@@ -187,7 +187,51 @@ def get_capacity_curve(
 
     if len(data) == 0:
         return f"{ennm}水库数据暂未获取"
+    
+    # 提取横坐标和纵坐标
+    capacities = [d['capactiy'] for d in data]
+    levels = [d['level'] for d in data]
 
+    option = {
+        "title": {
+            "text": f'{ennm}水库库容曲线',
+            "subtext": "数据来源：国家水利部",
+            "left": "center"
+        },
+        "tooltip": {
+            "trigger": 'axis'
+        },
+        "xAxis": {
+            "type": 'category',
+            "name": '库容 (m³)',
+            "boundaryGap": False,
+            "data": capacities
+        },
+        "yAxis": {
+            "type": 'value',
+            "name": '水位（m）',
+            "min": min(levels)-(min(levels)%10),
+            "max": max(levels)+(10-max(levels)%10),
+            "scale": True
+        },
+        "series": [
+            {
+                "name": 'Data',
+                "type": 'line',
+                "data": levels,
+                "smooth": True,
+                "areaStyle": {
+                
+                },
+                "label": {
+                  "show": True
+                }
+            }
+        ]
+    }
+
+    print(json.dumps(option, indent=4, ensure_ascii=False))
+    # exit()
     '''绘制图像'''
     from pylab import mpl
     import matplotlib.pyplot as plt
@@ -196,9 +240,6 @@ def get_capacity_curve(
     # 设置中文字体
     mpl.rcParams['font.family']= "SimHei"      
     mpl.rcParams['axes.unicode_minus']=False
-    # 提取横坐标和纵坐标
-    capacities = [d['capactiy'] for d in data]
-    levels = [d['level'] for d in data]
 
     # 绘制曲线
     x0 = len(capacities) if len(capacities) <= 20 else 20
@@ -262,8 +303,8 @@ def get_history_features(
         return date_time.strftime('%Y-%m-%d %H:%M:%S')
 
     template = f"""
-<caption>{ennm}水库历年特征表</caption>
 <table>
+  <caption>{ennm}水库历年特征表</caption>
   <tr>
     <th rowspan='2'>时间</th>
     <th colspan='3'>最高水位</th>

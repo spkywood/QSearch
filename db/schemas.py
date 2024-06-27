@@ -31,7 +31,7 @@ class UserLogin(BaseModel):
     name: str
     password: str
     captcha_id: str
-    captcha: str = Field(..., min_length=4, max_length=4)
+    captcha: str
 
     # 验证密码必须包含大写字母、小写字母和数字
     @field_validator('password')
@@ -43,6 +43,13 @@ class UserLogin(BaseModel):
         if not re.search(r'\d', v):
             raise ValueError('密码必须包含至少一个数字')
         return v
+
+    @field_validator('captcha')
+    def validate_captcha(cls, v):
+        if len(v) != 4:
+            raise ValueError('验证码输入错误')
+        return v
+    
     
 class UserCreate(BaseModel):
     name: str

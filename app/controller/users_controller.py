@@ -67,7 +67,7 @@ async def get_users(user: User = Depends(get_current_user)):
     if not is_root_user(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to access this resource"
+            detail="无权限"
         )
 
     users = await query_user()
@@ -119,14 +119,14 @@ async def login(
     if not captcha_text or captcha_text.lower() != user_login.captcha.lower():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid captcha",
+            detail="验证码输入错误",
         )
 
     user: User = await authenticate_user(user_login.name, user_login.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
+            detail="用户名或密码错误",
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
