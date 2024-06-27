@@ -15,6 +15,7 @@ import inspect
 from collections import OrderedDict
 from types import GenericAlias
 from typing import get_origin, Annotated, Dict
+import requests
 
 tools = []
 _TOOL_HOOKS = OrderedDict()
@@ -127,3 +128,107 @@ def get_ticket_price(
     """
 
     return {"ticket_price": "1000"}
+
+
+import json
+BASE_URL = 'http://192.168.1.126:14525'
+
+RESERVOIR_DICT = {
+    "龙羊峡" : "BDA00000011",
+    "刘家峡" : "BDA00000031",
+    "青铜峡" : "BDA00000072",
+    "海勃湾" : "BDA00000081",
+    "万家寨" : "BDA00000092",
+    "龙口" : "BDA00000101",
+    "三门峡" : "BDA00000111",
+    "小浪底" : "BDA00000121",
+    "西霞院" : "BDA00000171",
+    "河口村" : "BDA00000761",
+    "故县" : "BDA80000661",
+    "陆浑" : "BDA80200721",
+    "东平湖" : "BDD11000012"
+}
+
+def get_token() -> str:
+    url = f'{BASE_URL}/oauth/login'
+    payload = json.dumps({
+        "accessKey": "test",
+        "secretKey": "8f5ad4b447f0e23a2f47154481ec8187"
+    })
+    headers = {
+        'User-Agent': 'Apifox/1.0.0 (https://apifox.com)',
+        'Content-Type': 'application/json'
+    }
+
+    response = requests.request("POST", url, headers=headers, data=payload)
+    
+    return json.loads(response.text)['data']
+
+@register_tools
+def get_capacity_curve(
+    ennm: Annotated[str, '水库名称', True]
+):
+    """ 
+    根据水库名称查询水库库容曲线
+    """
+    if ennm not in RESERVOIR_DICT.keys():
+        return f"{ennm}水库不存在"
+    ennmcd = RESERVOIR_DICT.get(ennm)
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": get_token()
+    }
+    params = {"resname": ennmcd}
+
+    url = f'{BASE_URL}/project/resvzv/list'
+    response = requests.get(url, headers=headers, params=params)
+    data = json.loads(response.text)['data']
+
+    if len(data) == 0:
+        return f"{ennm}水库数据暂未获取"
+
+    '''绘制图像'''
+    from pylab import mpl
+    import matplotlib.pyplot as plt
+    from matplotlib.ticker import AutoLocator, MaxNLocator 
+
+    # 设置中文字体
+    mpl.rcParams['font.family']= "SimHei"      
+    mpl.rcParams['axes.unicode_minus']=False
+    # 提取横坐标和纵坐标
+    capacities = [d['capactiy'] for d in data]
+    levels = [d['level'] for d in data]
+
+    # 绘制曲线
+    x0 = len(capacities) if len(capacities) <= 20 else 20
+    plt.figure(figsize=(x0 if x0 > 8 else 12, 8))
+    plt.plot(capacities, levels, marker='o')
+    # 在曲线上标注数值
+    for i, level in enumerate(levels):
+        plt.annotate(f"{level} m", (capacities[i], levels[i]), textcoords="offset points", xytext=(0,10), ha='center')
+
+    start = int(min(levels))
+    end = int(max(levels))
+    a = int(int(end - start)/6)
+    for i in range(start, end, a):
+        plt.axhline(y=i, color='#D3D3D3', linestyle='--', linewidth=1, label=f'y={i}')
+
+    plt.fill_between(capacities, levels, y2=start, color='#1E90FF', alpha=0.1)
+    # 设置标题和坐标轴标签
+    plt.title(f'{ennm}水库库容与水位关系曲线')
+    plt.xlabel(r'库容 (m$^{{\scr 3}}$)')
+    plt.ylabel('水位 (m)')
+    plt.tight_layout()  # 自动调整参数，使图像各元素位置不重叠
+    # 设置横坐标步长
+    plt.xticks(capacities)
+    # 显示网格
+    plt.grid(False)
+    # 显示图表
+    # plt.show()
+    
+    plt.savefig(f'demo/data/result/{ennm}.png')
+    return 
+
+
+
