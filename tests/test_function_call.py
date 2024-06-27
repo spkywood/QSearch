@@ -1,4 +1,4 @@
-from tools.register import get_capacity_curve
+from tools.register import get_capacity_curve, get_history_features
 
 def draw():
     import matplotlib.pyplot as plt
@@ -54,7 +54,9 @@ if __name__ == '__main__':
     # import json
     from demo.constants import ennm
     for e in ennm:
-        test = get_capacity_curve(e)
-        # print(test)
+        # test = get_capacity_curve(e)
+        test = get_history_features(e, 2024)
+        print(test)
+        break
     # print(json.dumps(test, ensure_ascii=False, indent=4))
     # draw()

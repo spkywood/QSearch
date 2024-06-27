@@ -10,11 +10,11 @@
 
 
 import json
-import httpx
 import inspect
+import datetime
 from collections import OrderedDict
 from types import GenericAlias
-from typing import get_origin, Annotated, Dict
+from typing import get_origin, Annotated, Dict, List
 import requests
 
 tools = []
@@ -230,5 +230,84 @@ def get_capacity_curve(
     plt.savefig(f'demo/data/result/{ennm}.png')
     return 
 
+@register_tools
+def get_history_features(
+    ennm: Annotated[str, '水库名称', True],
+    q_year: Annotated[str, '查询年份', False] = None
+):
+    """
+    根据水库名称和查询年份查询水库历史特征、历年极值、库容极值、最大出库、最大入库等
+    """
+    if ennm not in RESERVOIR_DICT.keys():
+        return f"{ennm}水库不存在"
+    ennmcd = RESERVOIR_DICT.get(ennm)
 
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": get_token()
+    }
+    params = {"resname": ennmcd}
 
+    url = f'{BASE_URL}/hydrometric/resv/selectResMaxInfo'
+    response = requests.get(url, headers=headers, params=params)
+    data: List = json.loads(response.text)['data']
+
+    if len(data) == 0:
+        return f"{ennm}水库数据暂未获取"
+
+    def format_date(timestamp: str) -> str:
+        if timestamp is None:
+            return None
+        date_time = datetime.datetime.fromtimestamp(timestamp / 1000)
+        return date_time.strftime('%Y-%m-%d %H:%M:%S')
+
+    template = f"""
+<caption>{ennm}水库历年特征表</caption>
+<table>
+  <tr>
+    <th rowspan='2'>时间</th>
+    <th colspan='3'>最高水位</th>
+    <th colspan='2'>最大入库</th>
+    <th colspan='2'>最大出库</th>
+  </tr>
+  <tr>
+    <td>时间</td>
+    <td>水位</td>
+    <td>蓄量</td>
+    <td>时间</td>
+    <td>流量</td>
+    <td>时间</td>
+    <td>流量</td>
+  </tr>
+  """
+    data.sort(key=lambda x: x['year'], reverse=True)
+    if q_year is None:
+        for d in data[:5]:
+            template += f"""
+  <tr>
+    <td>{d.get('year')}</td>
+    <td>{format_date(d.get('ldate'))}</td>
+    <td>{d.get('level')}</td>
+    <td>{d.get('wq')}</td>
+    <td>{format_date(d.get('idate'))}</td>
+    <td>{d.get('inflow')}</td>
+    <td>{format_date(d.get('odate'))}</td>
+    <td>{d.get('outflow')}</td>
+  </tr>
+"""       
+    else:
+        for d in data:
+            if d.get('year') == q_year:
+                template += f"""
+  <tr>
+    <td>{d.get('year')}</td>
+    <td>{format_date(d.get('ldate'))}</td>
+    <td>{d.get('level')}</td>
+    <td>{d.get('wq')}</td>
+    <td>{format_date(d.get('idate'))}</td>
+    <td>{d.get('inflow')}</td>
+    <td>{format_date(d.get('odate'))}</td>
+    <td>{d.get('outflow')}</td>
+    </tr>
+"""
+    return template + "</table>"
