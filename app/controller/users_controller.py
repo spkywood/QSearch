@@ -125,7 +125,7 @@ async def login(
     user: User = await authenticate_user(user_login.name, user_login.password)
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="用户名或密码错误",
             headers={"WWW-Authenticate": "Bearer"},
         )
