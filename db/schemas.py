@@ -3,6 +3,7 @@ import re
 from app.models import QAType
 from typing import Optional, Union, List
 from pydantic import BaseModel, EmailStr, Field, field_validator
+from fastapi import HTTPException, status
 
 
 class QAItem(BaseModel):
@@ -37,16 +38,32 @@ class UserLogin(BaseModel):
     @field_validator('password')
     def validate_password(cls, v):
         if not re.search(r'[A-Z]', v):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='密码必须包含至少一个大写字母',
+            )
             raise ValueError('密码必须包含至少一个大写字母')
         if not re.search(r'[a-z]', v):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='密码必须包含至少一个小写字母',
+            )
             raise ValueError('密码必须包含至少一个小写字母')
         if not re.search(r'\d', v):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='密码必须包含至少一个数字',
+            )
             raise ValueError('密码必须包含至少一个数字')
         return v
 
     @field_validator('captcha')
     def validate_captcha(cls, v):
         if len(v) != 4:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='验证码长度错误',
+            )
             raise ValueError('验证码输入错误')
         return v
     
