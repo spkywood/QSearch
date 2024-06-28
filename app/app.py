@@ -18,7 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 def create_app(run_mode: str = None) -> FastAPI:
     app = FastAPI(
-        title="Cornfeild API Server",
+        title="CentnGPT API Server",
         version=VERSION
     )
 
