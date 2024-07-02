@@ -29,7 +29,7 @@ from common.response import BaseResponse
 # openssl rand -hex 32
 SECRET_KEY = APP_SECRET_KEY
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 6000
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 10
 
 # 密码上下文用于哈希和验证
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

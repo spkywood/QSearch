@@ -18,6 +18,8 @@ class RAGQuestion(BaseModel):
     kb_name: str
     conversation: Optional[str] = None
     
+class CoplitRequest(BaseModel):
+    question: str
 
 class GuideCreate(BaseModel):
     content: str = Field(..., max_length=2000)

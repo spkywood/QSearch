@@ -11,11 +11,12 @@
 
 import json
 import inspect
-import datetime
+from datetime import datetime, time
 from collections import OrderedDict
 from types import GenericAlias
 from typing import get_origin, Annotated, Dict, List
 import requests
+from common import logger
 
 tools = []
 _TOOL_HOOKS = OrderedDict()
@@ -74,61 +75,21 @@ def register_tools(func: callable):
 
 def dispatch_tool(tool_name: str, kwargs: dict):
     if tool_name not in _TOOL_HOOKS:
+        logger.info(f"Tools `{tool_name}` not defined")
         raise RuntimeError(f"Tools `{tool_name}` not defined")
     
+    logger.info(f'tool_name:{tool_name} kwargs:{kwargs}')
     tool_call = _TOOL_HOOKS[tool_name]
     try:
+        logger.info(f'tool_call:{kwargs}')
         ret = tool_call(**json.loads(kwargs))
-    except:
-        raise RuntimeError(f"Tools `{tool_name}` Call error")
+    except Exception as e:
+        raise RuntimeError(f"Tools `{tool_name}` Call {e}")
     return ret
 
-@register_tools
-def get_weather(
-    city: Annotated[str, '城市名', True],
-) -> str:
-    """
-    Get the weather for `city`.
-    """
-    
-    if not isinstance(city, str):
-        raise TypeError("City must be a string")
-    
-    return "Sunny"
-
-@register_tools
-def get_flight_number(
-    date: Annotated[str, '出发日期', True], 
-    departure: Annotated[str, '出发地', True], 
-    destination: Annotated[str, '目的地', True]
-) -> Dict[str, str]:
-    """
-    根据始发地、目的地和日期，查询对应日期的航班号
-    """
-    
-    flight_number = {
-        "北京":{
-            "上海" : "1234",
-            "广州" : "8321",
-        },
-        "上海":{
-            "北京" : "1233",
-            "广州" : "8123",
-        }
-    }
-    return { "flight_number":flight_number[departure][destination] }
-
-@register_tools
-def get_ticket_price(
-    date: Annotated[str, '日期', True] , 
-    flight_number: Annotated[str, '航班号', True]
-) -> Dict[str, str]:
-    """
-    查询某航班在某日的票价
-    """
-
-    return {"ticket_price": "1000"}
-
+# -------------------------------------
+# -----------   自定义工具   -----------
+# -------------------------------------
 
 import json
 BASE_URL = 'http://192.168.1.126:14525'
@@ -166,13 +127,23 @@ def get_token() -> str:
 
 @register_tools
 def get_capacity_curve(
-    ennm: Annotated[str, '水库名称', True]
+    ennm: Annotated[str, '水库名称，例如：龙羊峡或者龙羊峡水库', True]
 ):
     """ 
-    根据水库名称查询水库库容曲线
+    根据水库名称查询水库库容、水位曲线、水库库容曲线、库容与水位关系，库容变化趋势等；
+    
+    Args:
+        ennm: 水库名称，例如：龙羊峡或者龙羊峡水库
+    return:
+        data: List
     """
+
+    '''参数匹配'''
+    if "水库" in ennm:
+        ennm = ennm.replace('水库', '')
+
     if ennm not in RESERVOIR_DICT.keys():
-        return f"{ennm}水库不存在"
+        raise f"{ennm}水库不存在"
     ennmcd = RESERVOIR_DICT.get(ennm)
 
     headers = {
@@ -186,102 +157,42 @@ def get_capacity_curve(
     data = json.loads(response.text)['data']
 
     if len(data) == 0:
-        return f"{ennm}水库数据暂未获取"
+        raise f"{ennm}水库数据暂未获取"
     
-    # 提取横坐标和纵坐标
-    capacities = [d['capactiy'] for d in data]
-    levels = [d['level'] for d in data]
-
-    option = {
-        "title": {
-            "text": f'{ennm}水库库容曲线',
-            "subtext": "数据来源：国家水利部",
-            "left": "center"
-        },
-        "tooltip": {
-            "trigger": 'axis'
-        },
-        "xAxis": {
-            "type": 'category',
-            "name": '库容 (m³)',
-            "boundaryGap": False,
-            "data": capacities
-        },
-        "yAxis": {
-            "type": 'value',
-            "name": '水位（m）',
-            "min": min(levels)-(min(levels)%10),
-            "max": max(levels)+(10-max(levels)%10),
-            "scale": True
-        },
-        "series": [
-            {
-                "name": 'Data',
-                "type": 'line',
-                "data": levels,
-                "smooth": True,
-                "areaStyle": {
-                
-                },
-                "label": {
-                  "show": True
-                }
-            }
-        ]
-    }
-
-    print(json.dumps(option, indent=4, ensure_ascii=False))
-    # exit()
-    '''绘制图像'''
-    from pylab import mpl
-    import matplotlib.pyplot as plt
-    from matplotlib.ticker import AutoLocator, MaxNLocator 
-
-    # 设置中文字体
-    mpl.rcParams['font.family']= "SimHei"      
-    mpl.rcParams['axes.unicode_minus']=False
-
-    # 绘制曲线
-    x0 = len(capacities) if len(capacities) <= 20 else 20
-    plt.figure(figsize=(x0 if x0 > 8 else 12, 8))
-    plt.plot(capacities, levels, marker='o')
-    # 在曲线上标注数值
-    for i, level in enumerate(levels):
-        plt.annotate(f"{level} m", (capacities[i], levels[i]), textcoords="offset points", xytext=(0,10), ha='center')
-
-    start = int(min(levels))
-    end = int(max(levels))
-    a = int(int(end - start)/6)
-    for i in range(start, end, a):
-        plt.axhline(y=i, color='#D3D3D3', linestyle='--', linewidth=1, label=f'y={i}')
-
-    plt.fill_between(capacities, levels, y2=start, color='#1E90FF', alpha=0.1)
-    # 设置标题和坐标轴标签
-    plt.title(f'{ennm}水库库容与水位关系曲线')
-    plt.xlabel(r'库容 (m$^{{\scr 3}}$)')
-    plt.ylabel('水位 (m)')
-    plt.tight_layout()  # 自动调整参数，使图像各元素位置不重叠
-    # 设置横坐标步长
-    plt.xticks(capacities)
-    # 显示网格
-    plt.grid(False)
-    # 显示图表
-    # plt.show()
-    
-    plt.savefig(f'demo/data/result/{ennm}.png')
-    return 
+    return data
 
 @register_tools
 def get_history_features(
-    ennm: Annotated[str, '水库名称', True],
-    q_year: Annotated[str, '查询年份', False] = None
+    ennm: Annotated[str, '水库名称，例如：龙羊峡或者龙羊峡水库', True],
+    start_year: Annotated[int, '查询年份，例如：2020', False] = None,
+    end_year: Annotated[int, '查询年份，例如：2024', False] = None
 ):
     """
-    根据水库名称和查询年份查询水库历史特征、历年极值、库容极值、最大出库、最大入库等
+    根据水库名称和年份时间范围内查询水库历史特征、水库极值特征、库容极值、最大出库、最大入库等；
+    例如：最高水位、最大出库、最大入库发生在什么时候？
+    开始年份和结束年份，例如：2020-2024最高水位，最大出库，最大入库等。
+    最近5年的最大水位数据，对应查询时间范围为2020-2024
+    最近三年的最大出库流量，对应查询时间范围为2022-2024
+    
+    Args:
+        ennm: 水库名称，例如：龙羊峡或者龙羊峡水库
+        start_year: 开始年份，例如：2020，为空则查询最近5年的数据
+        end_year: 结束年份，例如：2024，为空则查询最近5年的数据
+    return:
+
     """
+    
+    if "水库" in ennm:
+        ennm = ennm.replace('水库', '')
+
     if ennm not in RESERVOIR_DICT.keys():
         return f"{ennm}水库不存在"
     ennmcd = RESERVOIR_DICT.get(ennm)
+
+    if not isinstance(start_year, int):
+        start_year = None
+    if not isinstance(end_year, int):
+        end_year = None
 
     headers = {
         "Content-Type": "application/json",
@@ -294,61 +205,88 @@ def get_history_features(
     data: List = json.loads(response.text)['data']
 
     if len(data) == 0:
-        return f"{ennm}水库数据暂未获取"
+        raise f"{ennm}水库数据暂未获取"
 
-    def format_date(timestamp: str) -> str:
-        if timestamp is None:
-            return None
-        date_time = datetime.datetime.fromtimestamp(timestamp / 1000)
-        return date_time.strftime('%Y-%m-%d %H:%M:%S')
+    if start_year is None:
+        return data[:5]
+    if start_year is not None and end_year is None:
+        return [d for d in data if d['year'] == start_year]
+    if start_year is not None and end_year is not None:
+        return [d for d in data if d['year'] >= start_year and d['year'] <= end_year]
+    
 
-    template = f"""
-<table>
-  <caption>{ennm}水库历年特征表</caption>
-  <tr>
-    <th rowspan='2'>时间</th>
-    <th colspan='3'>最高水位</th>
-    <th colspan='2'>最大入库</th>
-    <th colspan='2'>最大出库</th>
-  </tr>
-  <tr>
-    <td>时间</td>
-    <td>水位</td>
-    <td>蓄量</td>
-    <td>时间</td>
-    <td>流量</td>
-    <td>时间</td>
-    <td>流量</td>
-  </tr>
-  """
-    data.sort(key=lambda x: x['year'], reverse=True)
-    if q_year is None:
-        for d in data[:5]:
-            template += f"""
-  <tr>
-    <td>{d.get('year')}</td>
-    <td>{format_date(d.get('ldate'))}</td>
-    <td>{d.get('level')}</td>
-    <td>{d.get('wq')}</td>
-    <td>{format_date(d.get('idate'))}</td>
-    <td>{d.get('inflow')}</td>
-    <td>{format_date(d.get('odate'))}</td>
-    <td>{d.get('outflow')}</td>
-  </tr>
-"""       
-    else:
-        for d in data:
-            if d.get('year') == q_year:
-                template += f"""
-  <tr>
-    <td>{d.get('year')}</td>
-    <td>{format_date(d.get('ldate'))}</td>
-    <td>{d.get('level')}</td>
-    <td>{d.get('wq')}</td>
-    <td>{format_date(d.get('idate'))}</td>
-    <td>{d.get('inflow')}</td>
-    <td>{format_date(d.get('odate'))}</td>
-    <td>{d.get('outflow')}</td>
-    </tr>
-"""
-    return template + "</table>"
+@register_tools
+def get_reservoir_characteristics(
+    ennm: Annotated[str, '水库名称，例如：龙羊峡或者龙羊峡水库', True]
+) -> str:
+    """ 
+    根据水库名称查询水库信息，水库特性等
+    水库特性是指描述水库特征和功能的一些关键参数和水位设定，可能包括水库类型与位置、库容与规模、特征水位等参数。
+    包括“水库特性”、“水库特征”、“水库信息”、“介绍xx水库”、“水库参数”、“特征水位”、“水库类型”、“水库任务”等关键词
+    """
+    
+    if "水库" in ennm:
+        ennm = ennm.replace('水库', '')
+
+    if ennm not in RESERVOIR_DICT.keys():
+        raise f"{ennm}水库不存在"
+    ennmcd = RESERVOIR_DICT.get(ennm)
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": get_token()
+    }
+    params = {"resname": ennmcd}
+
+    url = f'{BASE_URL}/project/resv/get'
+    response = requests.get(url, headers=headers, params=params)
+    data = json.loads(response.text)['data']
+
+    if len(data) == 0:
+        raise f"{ennm}水库数据暂未获取"
+    
+    return data
+
+
+@register_tools
+def get_realtime_water_condition(
+    ennm: Annotated[str, '水库名称', True],
+    startDate: Annotated[str, '开始时间', False] = None,
+    endDate: Annotated[str, '结束时间', False] = None
+) -> str:
+    """
+    根据水库名称和时间查询水库实时“水情”、“水位”、“流量”、“蓄量”、“蓄水量”等信息
+    查询xx水库/地区水情时，调取对应的水位、入库流量、出库流量、蓄量数据
+    """
+    
+    '''参数匹配'''
+    if "水库" in ennm:
+        ennm = ennm.replace('水库', '')
+    startDate = '' if startDate is None else startDate
+    
+    if ennm not in RESERVOIR_DICT.keys():
+        raise f"{ennm}水库不存在"
+    ennmcd = RESERVOIR_DICT.get(ennm)
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": get_token()
+    }
+    startDate = '' if startDate is None else startDate
+    endDate = '' if endDate is None else endDate
+
+    params = {
+        "resname": ennmcd,
+        "startDate": startDate,
+        "endDate": endDate
+    }
+
+    url = f'{BASE_URL}/hydrometric/rhourrt/list'
+    response = requests.get(url, headers=headers, params=params)
+    data = json.loads(response.text)['data']
+
+    if len(data) == 0:
+        raise f"{ennm}水库数据暂未获取"
+    
+
+    return data[-7:]

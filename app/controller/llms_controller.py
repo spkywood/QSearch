@@ -9,7 +9,7 @@
 '''
 
 
-from typing import Annotated, List, Dict
+from typing import Annotated, List, Dict, Callable
 from fastapi import APIRouter, Body, Depends
 from sse_starlette.sse import EventSourceResponse
 import json
@@ -18,12 +18,17 @@ from time import time
 from common import logger
 from app.models import User
 from app.controller import get_current_user
-from db.schemas import ChatSession, RAGQuestion, QAItem, ChatHistoryRequest
+from db.schemas import (
+    ChatSession, RAGQuestion, QAItem, 
+    ChatHistoryRequest, CoplitRequest
+)
 from common.response import BaseResponse
 from app.runtime import LLMChatGLM, LLMQwen
 from setting import CHATGLM_API_KEY, QWEN_API_KEY
 from tools.register import tools, dispatch_tool
 from app.models import Conversation
+
+from tools.tools_template import MESSAGE_TEMPLATE, GENERATR_TEMPLATE
 
 from db.curds import (
     query_chunk_with_uuid, 
@@ -65,7 +70,7 @@ async def create_chat(
 
     return BaseResponse(
         code=200,
-        message="success",
+        msg="success",
         data={
             "mask" : {
                 "conversation": {
@@ -92,7 +97,7 @@ async def get_chat_sessions(
 
     return BaseResponse(
         code=200,
-        message="success",
+        msg="success",
         data=[
             {
                 "id": conv.conv_uuid,
@@ -117,7 +122,7 @@ async def get_chat_history(
     history = await redis.hget(redis_name, item.uuid)
     return BaseResponse(
         code=200,
-        message="success",
+        msg="success",
         data=history
     )
 
@@ -137,7 +142,7 @@ async def completion(
     
     return BaseResponse(
         code=200,
-        message="success",
+        msg="success",
         data=resp
     )
 
@@ -261,7 +266,6 @@ async def chat_with_knowledge(
             quuid=quuid,
         )
     )
-    return BaseResponse(code=200, message="success", data=top[0])
 
 
 @router.get("/rag/content", summary="获取检索结果")
@@ -300,38 +304,80 @@ async def chat_with_tools(
 
     return BaseResponse(
         code=code,
-        message="success",
+        msg="success",
         data=result
     )
 
-@router.post("/sse/chat/tools", summary="工具调用", include_in_schema=False)
+@router.post("/sse/chat-tools", summary="软件助手问答", include_in_schema=True)
 async def sse_chat_with_tools(
-    model: Annotated[str, Body(...)],
-    question: Annotated[str, Body(...)],
-    stream: Annotated[bool, Body(...)],
-):
+    item: CoplitRequest,
+    # user: User = Depends(get_current_user)
+) -> EventSourceResponse:
     messages = [
         {'role': 'system', 'content': '不要假设或猜测传入函数的参数值。如果用户的描述不明确，请要求用户提供必要信息'},
-        {'role': 'user', 'content': question}
+        {'role': 'user', 'content': item.question}
     ]
+
+    model_response = chatglm.invoke(messages=messages, tools=tools)
     
-    model_response = chatglm.sse_invoke(messages=messages, tools=tools)
+    '''工具未注册，或未能匹配工具'''
+    if model_response['tool_calls'] is None:
+        return BaseResponse(
+            code=400, 
+            msg=model_response['content'], 
+            data=None
+        )
 
-    if isinstance(model_response, dict) and model_response.get('tool_calls'):
-        tool_name = model_response['tool_calls'][0]['function']['name']
-        kwargs = model_response['tool_calls'][0]['function']['arguments']
-        
-        code = 200
+    tool_name = model_response['tool_calls'][0]['function']['name']
+    kwargs = model_response['tool_calls'][0]['function']['arguments']
+    try:
         result = dispatch_tool(tool_name, kwargs)
-    elif isinstance(model_response, str):
-        code = 500
-        result = model_response
-    else:
-        code = 400
-        result = "No tool called"
+    except Exception as e:
+        logger.error(f'dispatch_tool error:{e}')
+        return BaseResponse(
+            code=500, 
+            msg=str(e), 
+            data=None
+        )
 
+    '''tools/tools_template.py中定义返回模板，根据模板生成回复'''
+    generate_template: Callable = GENERATR_TEMPLATE.get(tool_name)
+    resp = generate_template(data=result)
+    '''检索结果写入redis'''
+    # 每次提问生成uuid
+    uuid_string = f'{item.question}_{time()}'
+    quuid = str(uuid.uuid5(uuid.NAMESPACE_OID, uuid_string))
+    qname = f'chat-tools:test'  # qname = f'chat-tools:{user.name}'
+
+    await redis.hset(qname, quuid, resp)
+    '''检索结果写入redis'''
+    
+    '''根据函数调用结果和用户问题，返回生成回复'''
+    question = resp + '\n\n' + item.question
+    messages = [
+        {'role': 'system', 'content': '根据问题和函数调用的结果，生成对应回复'},
+        {'role': 'user', 'content': question},
+    ]
+
+    return EventSourceResponse(
+        chatglm.sse_invoke(
+            messages=messages,
+            quuid=quuid
+        )
+    )
+
+@router.get("/tools/content", summary="获取软件助手生成结果")
+async def get_tool_content(
+    quuid: str,
+    # user: User = Depends(get_current_user)
+) -> BaseResponse:
+    '''根据知识库名称获取hash_name'''
+    # context = await redis.hget(f'chat-tools:{user.name}', quuid)
+    context = await redis.hget('chat-tools:test', quuid)
+    if context is None:
+        return BaseResponse(code=404, msg="知识库不存在", data=None)
     return BaseResponse(
-        code=code,
-        message="success",
-        data=result
+        code=200, 
+        msg="success", 
+        data=json.loads(context)
     )

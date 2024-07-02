@@ -45,7 +45,7 @@ class LLMChatGLM(LLM):
                 stream=stream,
                 tools=tools
             )
-
+            
             message = response.choices[0].message
             return message.model_dump()
         except Exception as e:
@@ -96,9 +96,11 @@ class LLMChatGLM(LLM):
                stream: bool = True,
                history: List[Dict[str, str]] = [],
                redis_name: str = None, 
-               redis_key: str = None
+               redis_key: str = None,
+               quuid: str = None,
     ):
         try:
+            logger.info(f"messages: {messages}")
             response = self.client.chat.completions.create(
                 model=self.model_name,
                 messages=messages,
@@ -116,11 +118,13 @@ class LLMChatGLM(LLM):
             for chunk in response:
                 delta = chunk.choices[0].delta
                 delta_content = delta.model_dump()
-                assistant['content'] += delta_content["content"]
+                delta_content['quuid'] = quuid
+                if delta_content["content"] is not None:
+                    assistant['content'] += delta_content["content"]
                 yield json.dumps(delta_content, ensure_ascii=False)
 
-            history.append(assistant)
-            logger.info(f"history: {history}")
+            # history.append(assistant)
+            logger.info(f"assistant: {assistant}")
 
         except Exception as e:
             logger.error(e)
