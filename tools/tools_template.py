@@ -207,10 +207,32 @@ def generate_realtime_water_condition(
 
     return json.dumps(option, ensure_ascii=False, indent=4)
 
+def generate_position(
+    data: Dict
+):  
+    option = {
+        "type": "position",
+        "content": data
+    }
+    return json.dumps(option, ensure_ascii=False, indent=4)
+
+
+def generate_water_rain(
+    data
+):
+    
+    option = {
+        "type": "surface",
+        "content": data
+    }
+    return json.dumps(option, ensure_ascii=False, indent=4)
+
 
 GENERATR_TEMPLATE = {
     "get_capacity_curve": generate_capacity_curve,
     "get_history_features": generate_history_features,
     "get_reservoir_characteristics": generate_reservoir_characteristics,
     "get_realtime_water_condition": generate_realtime_water_condition,
+    "get_position": generate_position,
+    "get_water_rain": generate_water_rain,
 }

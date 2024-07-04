@@ -33,7 +33,9 @@ class LLMChatGLM(LLM):
     def invoke(self, 
                messages: Union[str, List[Dict[str, str]]], 
                tools : Optional[object] = None,  
-               stream: bool = False
+               stream: bool = False,
+               top_p: float = 0.7,
+               temperature: float = 0.7,
     ):
         try:
             response = self.client.chat.completions.create(
@@ -100,7 +102,7 @@ class LLMChatGLM(LLM):
                quuid: str = None,
     ):
         try:
-            logger.info(f"messages: {messages}")
+            # logger.info(f"messages: {messages}")
             response = self.client.chat.completions.create(
                 model=self.model_name,
                 messages=messages,

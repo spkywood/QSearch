@@ -78,11 +78,10 @@ def dispatch_tool(tool_name: str, kwargs: dict):
         logger.info(f"Tools `{tool_name}` not defined")
         raise RuntimeError(f"Tools `{tool_name}` not defined")
     
-    logger.info(f'tool_name:{tool_name} kwargs:{kwargs}')
     tool_call = _TOOL_HOOKS[tool_name]
     try:
         logger.info(f'tool_call:{kwargs}')
-        ret = tool_call(**json.loads(kwargs))
+        ret = tool_call(**kwargs)
     except Exception as e:
         raise RuntimeError(f"Tools `{tool_name}` Call {e}")
     return ret
@@ -164,8 +163,8 @@ def get_capacity_curve(
 @register_tools
 def get_history_features(
     ennm: Annotated[str, '水库名称，例如：龙羊峡或者龙羊峡水库', True],
-    start_year: Annotated[int, '查询年份，例如：2020', False] = None,
-    end_year: Annotated[int, '查询年份，例如：2024', False] = None
+    start_year: Annotated[int, '查询年份，格式：%Y', False] = None,
+    end_year: Annotated[int, '查询年份，格式：%Y', False] = None
 ):
     """
     根据水库名称和年份时间范围内查询水库历史特征、水库极值特征、库容极值、最大出库、最大入库等；
@@ -176,8 +175,8 @@ def get_history_features(
     
     Args:
         ennm: 水库名称，例如：龙羊峡或者龙羊峡水库
-        start_year: 开始年份，例如：2020，为空则查询最近5年的数据
-        end_year: 结束年份，例如：2024，为空则查询最近5年的数据
+        start_year: 开始年份，例如：%Y，为空则查询最近5年的数据
+        end_year: 结束年份，例如：%Y，为空则查询最近5年的数据
     return:
 
     """
@@ -251,14 +250,20 @@ def get_reservoir_characteristics(
 @register_tools
 def get_realtime_water_condition(
     ennm: Annotated[str, '水库名称', True],
-    startDate: Annotated[str, '开始时间', False] = None,
-    endDate: Annotated[str, '结束时间', False] = None
+    startDate: Annotated[str, '开始时间，%Y-%m-%d 00:00:00', False] = None,
+    endDate: Annotated[str, '结束时间，%Y-%m-%d 00:00:00', False] = None
 ) -> str:
     """
-    根据水库名称和时间查询水库实时“水情”、“水位”、“流量”、“蓄量”、“蓄水量”等信息
-    查询xx水库/地区水情时，调取对应的水位、入库流量、出库流量、蓄量数据
-    """
+    根据水库名称和时间查询水库“水情”、“水位”、“流量”、“蓄量”、“蓄水量”等信息
+    查询xx水库/地区水情时，调取对应的水位、入库流量、出库流量、蓄量数据，
+    例如：龙羊峡水库今天水位为多少，实时水情怎么样？
     
+    Args:
+        ennm: 水库名称，例如：龙羊峡或者龙羊峡水库
+        startDate: 开始时间，格式：%Y-%m-%d 00:00:00,可以为空
+        endDate: 结束时间，例如：%Y-%m-%d 00:00:00,可以为空
+    """
+    logger.info(f"**kwargs**:{ennm} {startDate}, {endDate}")
     '''参数匹配'''
     if "水库" in ennm:
         ennm = ennm.replace('水库', '')
@@ -288,5 +293,44 @@ def get_realtime_water_condition(
     if len(data) == 0:
         raise f"{ennm}水库数据暂未获取"
     
+    if startDate is None and endDate is None:
+        dates = [datetime.fromtimestamp(d['date'] / 1000) for d in data]
+        from bisect import bisect_left, bisect_right
+        start = datetime.strftime(startDate, '%Y-%m-%d %H:%M:%S')
+        end = datetime.strftime(endDate, '%Y-%m-%d %H:%M:%S')
+
+        start_index = bisect_left(dates, start)
+        end_index = bisect_right(dates, end)
+
+        return data[start_index:end_index]
 
     return data[-7:]
+
+
+@register_tools
+def get_position(
+    ennm: Annotated[str, '水库名称', True],
+):
+    """
+    根据水库名称查询水库位置，经纬度坐标等
+    
+    Args:
+        ennm: 水库名称，例如：龙羊峡或者龙羊峡水库
+    """
+    return {"ennm" : ennm}
+
+@register_tools
+def get_water_rain(
+    ennm: Annotated[str, '水库名称', True],
+    startDate: Annotated[str, '开始时间，%Y-%m-%d 00:00:00', True] = None,
+    endDate: Annotated[str, '结束时间，%Y-%m-%d 23:59:59', True] = None
+) -> str:
+    """
+    根据水库名称和时间查询降水等值线数值，降水量空间分布特征，降雨等值线图等
+    """
+    
+    return {
+        "ennm" : ennm,
+        "startDate" : startDate,
+        "endDate" : endDate
+    }

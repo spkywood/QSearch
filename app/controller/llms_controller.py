@@ -14,7 +14,7 @@ from fastapi import APIRouter, Body, Depends
 from sse_starlette.sse import EventSourceResponse
 import json
 import uuid
-from time import time
+from time import time, sleep
 from common import logger
 from app.models import User
 from app.controller import get_current_user
@@ -330,6 +330,42 @@ async def sse_chat_with_tools(
 
     tool_name = model_response['tool_calls'][0]['function']['name']
     kwargs = model_response['tool_calls'][0]['function']['arguments']
+    kwargs = json.loads(kwargs)
+
+    '''参数固定模板'''
+    if tool_name in ['get_history_features', 'get_realtime_water_condition']:
+        pass
+
+    # '''参数预处理agent'''
+    # from common.prompt import preprocess_prompt
+    # tool_def = None
+    # for tool in tools:
+    #     if tool['function']['name'] == tool_name:
+    #         tool_def = tool
+    #         break
+    # if tool_def is None:
+    #     pass
+    # else:
+    #     prompt = preprocess_prompt(tool_def, item.question)
+    #     model_response = chatglm.invoke(
+    #         messages=[{'role': 'user', 'content': prompt}],
+    #         top_p=0.1,
+    #         temperature=0.7
+    #     )
+    #     logger.info(f"{model_response}")
+    #     try:
+    #         import re
+    #         match = re.search(r'```python\n(.*?)\n```', model_response['content'], re.DOTALL)
+    #         if match:
+    #             json_str = match.group(1)
+    #             local_vars = {}
+    #             exec(json_str, globals(), local_vars)
+    #             key, kwargs = local_vars.popitem()
+    #     except Exception as e:
+    #         logger.error(f'preprocess_prompt error:{e}')
+    #         pass
+
+    logger.info(f"{item.question} {tool_name} {kwargs}")
     try:
         result = dispatch_tool(tool_name, kwargs)
     except Exception as e:
@@ -352,6 +388,24 @@ async def sse_chat_with_tools(
     await redis.hset(qname, quuid, resp)
     '''检索结果写入redis'''
     
+    if tool_name in ['get_water_rain']:
+        import jieba
+        import asyncio
+        tmp = item.question.replace('查询', '').replace('有什么', '').replace('?', '').replace('？', '')
+        tmp += "展示如下:"
+
+        words = jieba.cut(tmp, cut_all=False)
+        words = [word for word in words]
+        def foo():
+            for word in words:
+                res = json.dumps({"content": word, "role": "assistant", "tool_calls": None, "quuid": quuid},
+                    ensure_ascii=False, indent=4)
+                yield res
+                sleep(0.2)
+
+        return EventSourceResponse(foo() )
+    
+
     '''根据函数调用结果和用户问题，返回生成回复'''
     question = resp + '\n\n' + item.question
     messages = [
