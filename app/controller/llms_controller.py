@@ -212,9 +212,33 @@ async def chat_with_knowledge(
 
         file_id = chunk['file_id']
         chunk_id = chunk['chunk_id']
+
+        text = chunk['chunk']
         prev_text = await query_chunk_with_id(file_id=file_id, chunk_id=chunk_id-1)
         next_text = await query_chunk_with_id(file_id=file_id, chunk_id=chunk_id+1)
+
+        #############
+        ### 删除overlap部分字符串
+        ##############
+        l1_l2_overlap = min(len(text), len(prev_text))
+        l2_l3_overlap = min(len(prev_text), len(next_text))
+
+        over1_str = ""
+        over2_str = ""
+        for i in range(l1_l2_overlap, 0, -1):
+            if text[-i:] == prev_text[:i]:
+                over1_str = text[-i:]
         
+        for i in range(l2_l3_overlap, 0, -1):
+            if prev_text[-i:] == next_text[:i]:
+                over2_str = prev_text[-i:]
+        
+        logger.info(f"overlap_string1: {over1_str}")
+        logger.info(f"overlap_string2: {over2_str}")
+
+        prev_text = prev_text.replace(over1_str, "")
+        next_text = next_text.replace(over2_str, "")
+
         text = prev_text.strip() + chunk['chunk'].strip() + next_text.strip()
         # knowledges.append(text)
         knowledges.append({
@@ -271,11 +295,11 @@ async def chat_with_knowledge(
 @router.get("/rag/content", summary="获取检索结果")
 async def get_rag_content(
     quuid: str,
-    # user: User = Depends(get_current_user)
+    user: User = Depends(get_current_user)
 ) -> BaseResponse:
     '''根据知识库名称获取hash_name'''
-    # context = await redis.hget(f'question:{user.name}', quuid)
-    context = await redis.hget('question:test', quuid)
+    context = await redis.hget(f'question:{user.name}', quuid)
+    # context = await redis.hget('question:test', quuid)
     if context is None:
         return BaseResponse(code=404, msg="failure", data="知识库不存在")
     return BaseResponse(code=200, msg="success", data=json.loads(context))
@@ -311,7 +335,7 @@ async def chat_with_tools(
 @router.post("/sse/chat-tools", summary="软件助手问答", include_in_schema=True)
 async def sse_chat_with_tools(
     item: CoplitRequest,
-    # user: User = Depends(get_current_user)
+    user: User = Depends(get_current_user)
 ) -> EventSourceResponse:
     messages = [
         {'role': 'system', 'content': '不要假设或猜测传入函数的参数值。如果用户的描述不明确，请要求用户提供必要信息'},
@@ -383,7 +407,7 @@ async def sse_chat_with_tools(
     # 每次提问生成uuid
     uuid_string = f'{item.question}_{time()}'
     quuid = str(uuid.uuid5(uuid.NAMESPACE_OID, uuid_string))
-    qname = f'chat-tools:test'  # qname = f'chat-tools:{user.name}'
+    qname = f'chat-tools:{user.name}'  # qname = f'chat-tools:test'
 
     await redis.hset(qname, quuid, resp)
     '''检索结果写入redis'''
@@ -423,11 +447,11 @@ async def sse_chat_with_tools(
 @router.get("/tools/content", summary="获取软件助手生成结果")
 async def get_tool_content(
     quuid: str,
-    # user: User = Depends(get_current_user)
+    user: User = Depends(get_current_user)
 ) -> BaseResponse:
     '''根据知识库名称获取hash_name'''
-    # context = await redis.hget(f'chat-tools:{user.name}', quuid)
-    context = await redis.hget('chat-tools:test', quuid)
+    context = await redis.hget(f'chat-tools:{user.name}', quuid)
+    # context = await redis.hget('chat-tools:test', quuid)
     if context is None:
         return BaseResponse(code=404, msg="知识库不存在", data=None)
     return BaseResponse(

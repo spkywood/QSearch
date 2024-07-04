@@ -210,6 +210,8 @@ async def query_chunk_with_uuid(session: AsyncSession, chunk_uuid: str) -> FileC
 @with_session
 async def query_chunk_with_id(session: AsyncSession, file_id: int , chunk_id: int) -> FileChunk:
     # [TODO] 待优化SQL
+    if chunk_id < 0:
+        return ""
     stmt = select(FileChunk.chunk).where(and_(FileChunk.file_id == file_id, FileChunk.chunk_id == chunk_id))
     result = await session.execute(stmt)
     text = result.scalar_one_or_none()
