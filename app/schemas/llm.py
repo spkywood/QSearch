@@ -11,7 +11,7 @@
 
 
 from enum import Enum
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 class QAType(Enum):
     LLM = "LLM"
@@ -43,3 +43,13 @@ class CoplitRequest(BaseModel):
     question: str
     conversation: str = None
     model: ChatModel = ChatModel.CHATGLM
+
+
+class GuideCreate(BaseModel):
+    content: str = Field(..., max_length=2000)
+    qa_type: QAType
+
+class KnowledgeCreate(BaseModel):
+    name: str
+    icon: str
+    desc: str
