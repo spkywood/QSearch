@@ -95,7 +95,7 @@ def generate_history_features(
     template += "</table>"
 
     options = {
-        "type": "markdown",
+        "type": "html",
         "content": template
     }
     return json.dumps(options, indent=4, ensure_ascii=False)
@@ -167,7 +167,7 @@ def generate_reservoir_characteristics(
 </table>
 """
     options = {
-        "type": "markdown",
+        "type": "html",
         "content": template
     }
     return json.dumps(options, indent=4, ensure_ascii=False)
