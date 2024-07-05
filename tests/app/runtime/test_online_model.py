@@ -1,4 +1,4 @@
-from setting import QWEN_API_KEY
+from settings import QWEN_API_KEY
 from app.runtime.online_model import OnlineModel
 model = OnlineModel(QWEN_API_KEY, base_url='https://dashscope.aliyuncs.com/compatible-mode/v1')
 

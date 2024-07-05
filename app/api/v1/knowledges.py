@@ -13,17 +13,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 
 from app.models import User
-from common.response import BaseResponse
+from app.core.response import BaseResponse
 from db import minio_client, es_client, milvus_client
 from db.schemas import Token, KnowledgeCreate, GuideCreate
-from app.controller import get_current_user
-from db.curds import ( 
-    add_guide,
-    query_guides,
-    add_knowledge_base, 
-    query_knowledge_base
-
-)
+from app.core.oauth import get_current_user
+from app.controllers.guide import add_guide, query_guides
+from app.controllers.knowledge_base import add_knowledge_base, query_knowledge_base
 
 
 router = APIRouter()

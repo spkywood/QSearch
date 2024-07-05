@@ -12,7 +12,6 @@
 import asyncio
 
 from db.migrate import drop_tables, create_tables
-from db.curds import add_user, query_user
 
 async def main():
     await drop_tables()

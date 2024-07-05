@@ -18,7 +18,7 @@ from transformers import (
     is_torch_npu_available
 )
 
-from setting import MODEL_PATH
+from settings import MODEL_PATH
 
 class LocalModel:
     def __init__(self, 

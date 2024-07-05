@@ -14,7 +14,8 @@ from contextlib import contextmanager
 from collections import OrderedDict
 from typing import List, Any, Union, Tuple
 
-from app.runtime import LocalModel, Embedding, Reranker
+from app.runtime import Embedding, Reranker
+from app.schemas.llm import ModelType
 
 
 class ThreadSafeObject:
@@ -102,16 +103,9 @@ class CachePool:
         else:
             return cache
 
-from enum import Enum
-class ModelType(Enum):
-    EMBEDDING = "embedding"
-    RERANKER = "reranker"
-
 class ModelManager(CachePool):
-    def load_models(self, model: str = None, device: str = None, model_type: ModelType = None):
+    def load_models(self, model: str = None, device: str = 'cuda', model_type: ModelType = None):
         self.atomic.acquire()
-        model = model
-        device = 'cuda'
         key = model
         if not self.get(key):
             item = ThreadSafeObject(key, pool=self)

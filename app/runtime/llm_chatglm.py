@@ -11,7 +11,7 @@
 
 
 from app.runtime.llm import LLM
-from common import logger
+from logger import logger
 
 from typing import List, Dict, Union, Optional
 from http import HTTPStatus
@@ -133,7 +133,7 @@ class LLMChatGLM(LLM):
             yield "llm server connection error."
 
 if __name__ == "__main__":
-    from setting import CHATGLM_API_KEY
+    from settings import CHATGLM_API_KEY
     llm = LLMChatGLM(
         api_key=CHATGLM_API_KEY,
         base_url="",

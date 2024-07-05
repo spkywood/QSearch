@@ -7,7 +7,7 @@ from io import BytesIO
 from PyPDF2 import EncodingException, DecodeException
 from langchain_community.document_loaders import UnstructuredFileLoader
 
-from common import logger
+from logger import logger
 from app.loaders.ocr import get_ocr
 
 PDF_OCR_THRESHOLD = (0.6, 0.6)

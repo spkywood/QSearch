@@ -6,6 +6,7 @@ demo/download*
 docker/volumes
 
 sql/
+*_bak/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

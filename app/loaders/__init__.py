@@ -4,7 +4,7 @@ import importlib
 from typing import Dict
 
 
-from common import logger
+from logger import logger
 from .doc_loader import DocLoader
 from .pdf_loader import PdfLoader
 # from .img_loader import ImgLoader

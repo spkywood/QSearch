@@ -12,7 +12,7 @@
 from functools import wraps
 from contextlib import asynccontextmanager
 
-from common import logger
+from logger import logger
 from db.database import SessionLocal
 
 @asynccontextmanager

@@ -16,7 +16,7 @@ from collections import OrderedDict
 from types import GenericAlias
 from typing import get_origin, Annotated, Dict, List
 import requests
-from common import logger
+from logger import logger
 
 tools = []
 _TOOL_HOOKS = OrderedDict()

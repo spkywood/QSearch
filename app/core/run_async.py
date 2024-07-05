@@ -14,7 +14,7 @@ from typing import TypeVar, Callable
 from typing_extensions import ParamSpec
 from starlette.concurrency import run_in_threadpool
 
-from setting import MAX_CONCURRENT_THREADS
+from settings import MAX_CONCURRENT_THREADS
 
 MAX_THREADS_GUARD = Semaphore(MAX_CONCURRENT_THREADS)
 

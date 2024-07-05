@@ -19,8 +19,8 @@ from pymilvus import (
     MilvusException,
     CollectionSchema,
 )
-from common.singleton import Singleton
-from common import logger
+from app.core.singleton import Singleton
+from logger import logger
 
 class MilvusStore(metaclass=Singleton):
     """
@@ -120,5 +120,5 @@ class MilvusStore(metaclass=Singleton):
         return [r.to_dict().get("entity").get("chunk_uuid") for result in results for r in result]
 
 
-from setting import MILVUS_HOST, MILVUS_PORT
+from settings import MILVUS_HOST, MILVUS_PORT
 milvus_client = MilvusStore(MILVUS_HOST, MILVUS_PORT)

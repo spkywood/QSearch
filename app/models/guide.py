@@ -19,18 +19,13 @@
 
 
 from app.models import BaseTable
+from app.schemas.llm import QAType
 import enum
 
 from sqlalchemy import String, Boolean, Enum
 from sqlalchemy.orm import (
     relationship, mapped_column, Mapped
 )
-
-class QAType(enum.Enum):
-    LLM = "LLM"
-    RAG = "RAG"
-    TOOL = "TOOL"
-
 
 class Guide(BaseTable):
     __tablename__ = "guides"

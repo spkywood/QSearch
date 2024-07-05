@@ -11,8 +11,8 @@
 
 from elasticsearch import Elasticsearch, helpers
 
-from common.singleton import Singleton
-from common import logger
+from app.core.singleton import Singleton
+from logger import logger
 class ESClient(metaclass=Singleton):
     mappings = {
         "mappings": {
@@ -83,6 +83,6 @@ class ESClient(metaclass=Singleton):
         except Exception as e:
             logger.info(f"Failed to delete index '{index_name}': {e}")
 
-from setting import ES_HOST, ES_PORT
+from settings import ES_HOST, ES_PORT
 
 es_client = ESClient(host=ES_HOST, port=ES_PORT)

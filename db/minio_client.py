@@ -14,8 +14,8 @@ import urllib.parse
 from minio import Minio
 from minio.error import S3Error
 
-from common import logger
-from common.singleton import Singleton
+from logger import logger
+from app.core.singleton import Singleton
 
 class MinioClient(metaclass=Singleton):
     def __init__(self, endpoint, access_key, secret_key, secure=True) -> None:
@@ -56,7 +56,7 @@ class MinioClient(metaclass=Singleton):
         # url = self.client.presigned_get_object(bucket_name, obj_name)
         return self.client.presigned_get_object(bucket_name, obj_name)
 
-from setting import MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY
+from settings import MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY
 
 minio_client = MinioClient(
     endpoint=MINIO_ENDPOINT,

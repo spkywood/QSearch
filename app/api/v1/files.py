@@ -1,11 +1,12 @@
 #! python3
 # -*- encoding: utf-8 -*-
 '''
-@File    : files_controller.py
-@Time    : 2024/06/12 13:46:38
-@Author  : longfellow
-@Version : 1.0
+@File    : files.py
+@Time    : 2024/07/05 16:13:34
+@Author  : longfellow 
 @Email   : longfellow.wang@gmail.com
+@Version : 1.0
+@Desc    : None
 '''
 
 
@@ -21,15 +22,18 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
-from common import logger
-from common.run_async import run_async
-from common.response import BaseResponse
-from common.cache import model_manager, ModelType
+from logger import logger
+from app.core.run_async import run_async
+from app.core.response import BaseResponse
+from app.core.cache import model_manager
+from app.schemas.llm import ModelType
 
 from app.models import User, KnowledgeFile
 from app.loaders import get_text
-from app.controller import get_current_user
-from db.curds import add_knowledge_file, add_file_chunk, get_kb_hash_name
+from app.core.oauth import get_current_user
+from app.controllers.knowledge_base import get_kb_hash_name
+from app.controllers.file_chunk import add_file_chunk
+from app.controllers.knowledge_file import add_knowledge_file
 
 from app.runtime.embedding import Embedding
 from db import minio_client, milvus_client, es_client
@@ -37,7 +41,7 @@ from db import minio_client, milvus_client, es_client
 router = APIRouter()
 
 embedding: Embedding = model_manager.load_models(
-    'BAAI/bge-large-zh-v1.5', 
+    model='BAAI/bge-large-zh-v1.5', 
     device='cuda', 
     model_type=ModelType.EMBEDDING
 )
@@ -73,7 +77,7 @@ async def save_files_in_threadpool(files: List[UploadFile], kb_name: str, overri
     for resp in await asyncio.gather(*tasks):
         yield resp
 
-@router.post("/upload_docs")
+@router.post("/upload_docs", summary="批量上传文件接口", include_in_schema=False)
 async def upload_docs(
     files: List[UploadFile] = File(..., description="批量上传文件接口"),
     kb_name: str = Form(..., description="知识库名称", examples=["default"]),
@@ -165,4 +169,3 @@ async def doc_parsers(
         msg="success",
         data=minio_url
     )
-

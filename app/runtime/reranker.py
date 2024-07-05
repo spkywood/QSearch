@@ -14,7 +14,7 @@ import numpy as np
 from FlagEmbedding import FlagReranker
 from typing import Any, List, Dict
 
-from setting import MODEL_PATH
+from settings import MODEL_PATH
 
 class Reranker:
     def __init__(self, model_name: str, device: str = None) -> None:

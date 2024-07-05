@@ -55,7 +55,7 @@ class LLMQwen(LLM):
                 yield None
 
 if __name__ == "__main__":
-    from setting import QWEN_API_KEY
+    from settings import QWEN_API_KEY
     llm = LLMQwen(
         api_key=QWEN_API_KEY,
         model_name="qwen-max",

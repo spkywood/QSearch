@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.orm import declarative_base
-from setting import SQLALCHEMY_DATABASE_URI
+from settings import SQLALCHEMY_DATABASE_URI
 
 db_engine = create_async_engine(
     SQLALCHEMY_DATABASE_URI, echo=False, future=True,

@@ -18,7 +18,7 @@ from transformers import (
     is_torch_npu_available
 )
 
-from setting import MODEL_PATH
+from settings import MODEL_PATH
 
 class Embedding:
     def __init__(self, model_name: str = None, use_fp16: bool = False, device: str | int = None) -> None:
