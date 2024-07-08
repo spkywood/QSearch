@@ -14,10 +14,12 @@ import uuid
 import json
 import time
 import asyncio
-from typing import cast, List, Callable
+from typing import cast, List, Callable, Dict
 from app.runtime.online_model import OnlineModel
 from fastapi import APIRouter, Depends, Request
 from sse_starlette.sse import EventSourceResponse
+from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
 
 from app.models.user import User
 from app.models.conversation import Conversation
@@ -28,7 +30,7 @@ from app.schemas.llm import (
 )
 from db.redis_client import redis
 
-from loguru import logger
+from logger import logger
 from app.core.oauth import get_current_user
 from app.controllers.conversation import add_conversation
 from app.controllers.knowledge_base import get_kb_hash_name
@@ -229,8 +231,20 @@ async def sse_chat_with_tools(
 
     tool_name = model_response['tool_calls'][0]['function']['name']
     kwargs = model_response['tool_calls'][0]['function']['arguments']
-    kwargs = json.loads(kwargs)
+    kwargs: Dict = json.loads(kwargs)
 
+    '''时间参数模板'''
+    from tools.constants import get_date_range
+
+    if tool_name == 'get_realtime_water_condition':
+        fmt = '%Y-%m-%d 00:00:00'
+        end_fmt = '%Y-%m-%d 00:00:00'
+        kwargs = get_date_range(kwargs, item.question, fmt, end_fmt)
+    if tool_name == 'get_water_rain':
+        fmt = '%Y-%m-%d 00:00:00'
+        end_fmt = '%Y-%m-%d 23:59:59'
+        kwargs = get_date_range(kwargs, item.question, fmt, end_fmt)
+            
     logger.info(f"{item.question} {tool_name} {kwargs}")
     try:
         result = dispatch_tool(tool_name, kwargs)

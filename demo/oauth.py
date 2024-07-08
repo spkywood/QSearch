@@ -9,7 +9,7 @@ from jose.exceptions import ExpiredSignatureError
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.openapi.models import OAuthFlows 
 
-from loguru import logger
+from logger import logger
 
 
 class OAuth2Password(OAuth2):

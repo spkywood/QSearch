@@ -16,7 +16,7 @@ from sqlalchemy.future import select
 from app.models.user import User
 from db.session import with_session
 from sqlalchemy.ext.asyncio import AsyncSession
-from loguru import logger
+from logger import logger
 
 @with_session
 async def add_user(session: AsyncSession, name, email, phone, password):

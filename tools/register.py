@@ -293,18 +293,19 @@ def get_realtime_water_condition(
     if len(data) == 0:
         raise f"{ennm}水库数据暂未获取"
     
-    if startDate is None and endDate is None:
-        dates = [datetime.fromtimestamp(d['date'] / 1000) for d in data]
+    logger.info(f"startDate:{type(startDate)} endDate:{type(endDate)}")
+    if startDate is not None and endDate is not None:
+        dates = [datetime.fromtimestamp(int(d['date']) / 1000) for d in data]
         from bisect import bisect_left, bisect_right
-        start = datetime.strftime(startDate, '%Y-%m-%d %H:%M:%S')
-        end = datetime.strftime(endDate, '%Y-%m-%d %H:%M:%S')
+        start = datetime.strptime(startDate, '%Y-%m-%d %H:%M:%S')
+        end = datetime.strptime(endDate, '%Y-%m-%d %H:%M:%S')
 
         start_index = bisect_left(dates, start)
         end_index = bisect_right(dates, end)
 
         return data[start_index:end_index]
-
-    return data[-7:]
+    else:
+        return data[-7:]
 
 
 @register_tools
