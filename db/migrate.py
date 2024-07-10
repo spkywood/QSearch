@@ -23,10 +23,10 @@ for module_name in MODEL_MODULES:
 
 from db.database import db_engine, Base
 
-async def create_tables(action: str = 'init'):
+async def create_tables():
     async with db_engine.begin() as conn:
         await conn.run_sync(BaseTable.metadata.create_all)
 
-async def drop_tables(action: str = 'init'):
+async def drop_tables():
     async with db_engine.begin() as conn:
         await conn.run_sync(BaseTable.metadata.drop_all)

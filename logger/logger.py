@@ -12,7 +12,7 @@
 import sys
 
 def Logger():
-    from logger import logger
+    from loguru import logger
     logger.add(
         sys.stderr,
         format="{time} {level} {message}",
