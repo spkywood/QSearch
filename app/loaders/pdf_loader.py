@@ -216,6 +216,7 @@ class PdfLoader(UnstructuredFileLoader):
                     pdfFileObj = open(filepath, 'rb')
                 else:
                     pdfFileObj = BytesIO(filepath)
+
                 pdfReader = PyPDF2.PdfReader(pdfFileObj, strict=False)
                 num_pages = len(pdfReader.pages)
                 

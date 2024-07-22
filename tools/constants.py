@@ -1,6 +1,7 @@
 import re
 from typing import Dict
 from datetime import datetime, timedelta
+from logger import logger
 
 def get_date_from_match(match, current_year):
     # 提取年份
@@ -27,6 +28,12 @@ def get_date_from_match(match, current_year):
     return datetime(year, int(month), int(day))
 
 def get_date_range(kwargs: Dict, question: str, start_fmt: str, end_fmt: str):
+    # if ("startDate" not in kwargs or "endDate" not in kwargs):
+    #     kwargs.update({
+    #         "startDate": None,
+    #         "endDate": None,
+    #     })
+    #     return kwargs
     # 定义正则表达式模式
     pattern = re.compile(r'''
         (?:(?P<year>\d{4})[年.\s]*)?                # 年份 (可选)
@@ -49,7 +56,7 @@ def get_date_range(kwargs: Dict, question: str, start_fmt: str, end_fmt: str):
             specific_date = get_date_from_match(match, current_year)
             # 计算前后三天的时间范围
             start_date = specific_date - timedelta(days=3)
-            end_date = specific_date + timedelta(days=3)
+            end_date = specific_date + timedelta(days=4)
             kwargs.update({
                 "startDate": start_date.strftime(start_fmt),
                 "endDate": end_date.strftime(end_fmt),
@@ -57,10 +64,16 @@ def get_date_range(kwargs: Dict, question: str, start_fmt: str, end_fmt: str):
             return kwargs
         except ValueError:
             return kwargs
-        
-    elif "上一周" in question:
+
+    elif "今日" in question or "今天" in question:
+        end_date = now
+        start_date = end_date
+    elif "上一周" in question or "上周" in question:
         end_date = now - timedelta(days=now.weekday() + 1)
         start_date = end_date - timedelta(days=6)
+    elif "本周" in question or "这周" in question:
+        end_date = now
+        start_date = now - timedelta(days=7)
     elif "最近一周" in question or "过去一周" in question:
         end_date = now
         start_date = now - timedelta(days=7)

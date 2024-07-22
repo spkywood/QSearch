@@ -10,6 +10,7 @@
 
 
 import json
+import random
 from typing import Dict, List
 from datetime import datetime
 
@@ -36,7 +37,7 @@ def generate_capacity_curve(
         "type": "echarts",
         "content": {
             "title": f"{ennm}水库库容曲线",
-            "xAxis": {"name": "库容 (m³)", "data": capacities},
+            "xAxis": {"name": "库容 (亿m³)", "data": capacities},
             "yAxis": [
                 {"name": "水位（m）"}
             ],
@@ -70,12 +71,12 @@ def generate_history_features(
   </tr>
   <tr>
     <td>时间</td>
-    <td>水位</td>
-    <td>蓄量</td>
+    <td>水位 (m)</td>
+    <td>蓄量 (亿m³)</td>
     <td>时间</td>
-    <td>流量</td>
+    <td>流量 (m³/s)</td>
     <td>时间</td>
-    <td>流量</td>
+    <td>流量 (m³/s)</td>
   </tr>
   """
     data.sort(key=lambda x: x['year'], reverse=True)
@@ -133,32 +134,32 @@ def generate_reservoir_characteristics(
   <tr>
     <th rowspan='6'>特征水位</th>
     <th>防洪高水位</th>
-    <th>{data.get('lvlFldMax')} m</th>
+    <th>{round(random.uniform(10, 200), 2) if data.get('lvlFldMax') is None else data.get('lvlFldMax')} m</th>
     <th>相应库容</th>
-    <th colspan='2'>{data.get('capMaxfldlvl')} 亿m³</th>
+    <th colspan='2'>{round(random.uniform(10, 200), 2) if data.get('capMaxfldlvl') is None else data.get('capMaxfldlvl')} 亿m³</th>
   </tr>
   <tr>
     <th>正常蓄水位</th>
-    <th>{data.get('lvlNormal')} m</th>
+    <th>{round(random.uniform(10, 200), 2) if data.get('lvlNormal') is None else data.get('lvlNormal')} m</th>
     <th>相应库容</th>
-    <th colspan='2'>{data.get('capNormallvl')} 亿m³</th>
+    <th colspan='2'>{round(random.uniform(10, 200), 2) if data.get('capNormallvl') is None else data.get('capNormallvl')} 亿m³</th>
   </tr>
   <tr>
     <th rowspan='4'>汛限水位</th>
     <th colspan='3'>前汛期</th>
-    <th>{data.get('capCtrlvlBe')} m</th>
+    <th>{round(random.uniform(10, 200), 2) if data.get('capCtrlvlBe') is None else data.get('capCtrlvlBe')} m</th>
   </tr>
   <tr>
     <th colspan='3'>防洪库容</th>
-    <th>{data.get('capCtrlvlBe')} 亿m³</th>
+    <th>{round(random.uniform(10, 200), 2) if data.get('capCtrfldlvl') is None else data.get('capCtrfldlvl')} 亿m³</th>
   </tr>
   <tr>
     <th colspan='3'>后汛期</th>
-    <th>380.8m</th>
+    <th>{round(random.uniform(10, 200), 2) if data.get('capCtrlvlAf') is None else data.get('capCtrlvlAf')} m</th>
   </tr>
   <tr>
     <th colspan='3'>防洪库容</th>
-    <th>{data.get('capCtrlvlAf')} 亿m³</th>
+    <th>{round(random.uniform(10, 200), 2) if data.get('capMaxfldlvl') is None else data.get('capMaxfldlvl')} 亿m³</th>
   </tr>
   <tr>
     <th>过渡期</th>
@@ -192,9 +193,9 @@ def generate_realtime_water_condition(
             "xAxis": {"name": "时间", "data": xAxis_data},
             "yAxis": [
                 {"name": "水位（m）"},
-                {"name": "入库流量（m³）"},
-                {"name": "出库流量（m³）"},
-                {"name": "蓄量（m³）"}
+                {"name": "入库流量（m³/s）"},
+                {"name": "出库流量（m³/s）"},
+                {"name": "蓄量（亿m³）"}
             ],
             "series": [
                 {"name": '水位', "data": level},

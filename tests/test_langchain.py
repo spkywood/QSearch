@@ -1,3 +1,38 @@
+
+# from autogen.coding import CodeBlock
+# from autogen.coding.jupyter import DockerJupyterServer, JupyterCodeExecutor
+
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_openai import ChatOpenAI
+
+from settings import (
+    QWEN_API_KEY, QWEN_BASE_URL, QWEN_MODEL,
+    CHATGLM_API_KEY, CHATGLM_BASE_URL, CHATGLM_MODEL,
+    DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL
+)
+
+
+prompt = ChatPromptTemplate.from_template("讲一个关于{topic}的笑话")
+
+model = ChatOpenAI(
+    api_key=QWEN_API_KEY,
+    base_url=QWEN_BASE_URL,
+    model=QWEN_MODEL
+)
+output = StrOutputParser()
+
+chain = prompt | model | output
+
+pro = prompt.invoke({"topic": "程序员"})
+print(pro)
+
+# resp = chain.invoke({"topic": "程序员"})
+
+# print(resp)
+
+exit()
+
 from typing import List
 from langchain_core.tools import tool
 

@@ -70,6 +70,49 @@ python startup.py
 
 - 邮箱：longfellow.wang@gmail.com
 
+## xinference 
+
+# xinference 部署
+
+1. 启动xinference
+
+```sh
+xinference-local --host 0.0.0.0 --port 9997
+```
+
+2. 配置文件
+
+```sh
+vim glm4-9b.json
+```
+
+```json
+{
+  "version": 1,
+  "context_length": 131072,
+  "model_name": "glm4-9b",
+  "model_lang": ["en", "zh"],
+  "model_ability": ["chat", "tools"],
+  "model_family": "glm4-chat",
+  "model_specs": [
+    {
+      "model_format": "pytorch",
+      "model_size_in_billions": 9,
+      "quantizations": ["4-bit", "8-bit", "none"],
+      "model_id": "THUDM/glm-4-9b-chat",
+      "model_uri": "${MODEL_PATH}THUDM/glm-4-9b-chat"
+    }
+  ]
+}
+```
+
+3. 配置及加载
+
+```sh
+xinference register --model-type LLM --file custom-glm4-chat.json --persist
+xinference launch --model-name custom-glm4-chat --model-format pytorch --model-engine Transformers
+```
+
 ## 参考
 
 - [Langchain-Chatchat](https://github.com/chatchat-space/Langchain-Chatchat)

@@ -51,7 +51,14 @@ class MinioClient(metaclass=Singleton):
         except S3Error as e:
             logger.warning(f"put object {obj_name} to {bucket_name} {e}.")
             raise Exception(f"{e}.")
-        
+    
+    def upload_file(self, bucket_name, file_name, file_path):
+        try:
+            self.client.fput_object(bucket_name, file_name, file_path)
+            logger.info(f"文件 {file_path} 上传成功。")
+        except S3Error as e:
+            print(f"上传文件时出错: {e}")
+
     def get_obj_url(self, bucket_name, obj_name):
         # url = self.client.presigned_get_object(bucket_name, obj_name)
         return self.client.presigned_get_object(bucket_name, obj_name)

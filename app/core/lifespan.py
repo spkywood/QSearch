@@ -19,7 +19,7 @@ from app.runtime.online_model import OnlineModel
 from settings import (
     QWEN_API_KEY, QWEN_BASE_URL, QWEN_MODEL,
     CHATGLM_API_KEY, CHATGLM_BASE_URL, CHATGLM_MODEL,
-
+    DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL
 )
 
 

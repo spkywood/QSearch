@@ -1,0 +1,142 @@
+[
+    {
+        "type": "function",
+        "function": {
+            "name": "get_capacity_curve",
+            "description": "根据水库名称查询水库库容、水位曲线、水库库容曲线、库容与水位关系，库容变化趋势等；\n\nArgs:\n    ennm: 水库名称，例如：龙羊峡或者龙羊峡水库\nreturn:\n    data: List",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "ennm": {
+                        "description": "水库名称，例如：龙羊峡或者龙羊峡水库",
+                        "type": "str"
+                    }
+                }
+            },
+            "required": [
+                "ennm"
+            ]
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_history_features",
+            "description": "根据水库名称和年份时间范围内查询水库历史特征、水库极值特征、库容极值、最大出库、最大入库等；\n例如：最高水位、最大出库、最大入库发生在什么时候？\n开始年份和结束年份，例如：2020-2024最高水位，最大出库，最大入库等。\n最近5年的最大水位数据，对应查询时间范围为2020-2024\n最近三年的最大出库流量，对应查询时间范围为2022-2024\n水库名称必须在以下列表中：\n['龙羊峡', '刘家峡', '青铜峡', '海勃湾', '万家寨', '龙口', '三门峡', '小浪底', '西霞院', '河口村', '故县', '陆浑', '东平湖']\n\nArgs:\n    ennm: 水库名称，例如：龙羊峡或者龙羊峡水库\n    start_year: 开始年份，例如：%Y，为空则查询最近5年的数据\n    end_year: 结束年份，例如：%Y，为空则查询最近5年的数据\nreturn:",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "ennm": {
+                        "description": "水库名称，例如：龙羊峡或者龙羊峡水库",
+                        "type": "str"
+                    },
+                    "start_year": {
+                        "description": "查询年份，格式：%Y",
+                        "type": "int"
+                    },
+                    "end_year": {
+                        "description": "查询年份，格式：%Y",
+                        "type": "int"
+                    }
+                }
+            },
+            "required": [
+                "ennm"
+            ]
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_reservoir_characteristics",
+            "description": "根据水库名称查询水库信息，水库特性等\n水库特性是指描述水库特征和功能的一些关键参数和水位设定，可能包括水库类型与位置、库容与规模、特征水位等参数。\n包括“水库特性”、“水库特征”、“水库信息”、“介绍xx水库”、“水库参数”、“特征水位”、“水库类型”、“水库任务”等关键词\n水库名称必须在以下列表中：\n['龙羊峡', '刘家峡', '青铜峡', '海勃湾', '万家寨', '龙口', '三门峡', '小浪底', '西霞院', '河口村', '故县', '陆浑', '东平湖']",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "ennm": {
+                        "description": "水库名称，例如：龙羊峡或者龙羊峡水库",
+                        "type": "str"
+                    }
+                }
+            },
+            "required": [
+                "ennm"
+            ]
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_realtime_water_condition",
+            "description": "根据水库名称和时间查询水库“水情”、“水位”、“流量”、“蓄量”、“蓄水量”等信息\n查询xx水库/地区水情时，调取对应的水位、入库流量、出库流量、蓄量数据，\n例如：龙羊峡水库今天水位为多少，实时水情怎么样？\n水库名称必须在以下列表中：\n['龙羊峡', '刘家峡', '青铜峡', '海勃湾', '万家寨', '龙口', '三门峡', '小浪底', '西霞院', '河口村', '故县', '陆浑', '东平湖']\n\nArgs:\n    ennm: 水库名称，例如：龙羊峡或者龙羊峡水库\n    startDate: 开始时间，格式：%Y-%m-%d 00:00:00,可以为空\n    endDate: 结束时间，例如：%Y-%m-%d 00:00:00,可以为空",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "ennm": {
+                        "description": "水库名称",
+                        "type": "str"
+                    },
+                    "startDate": {
+                        "description": "开始时间，%Y-%m-%d 00:00:00",
+                        "type": "str"
+                    },
+                    "endDate": {
+                        "description": "结束时间，%Y-%m-%d 00:00:00",
+                        "type": "str"
+                    }
+                }
+            },
+            "required": [
+                "ennm"
+            ]
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_position",
+            "description": "根据水库名称查询水库位置，经纬度坐标等\n例如：龙羊峡水库在哪里？\n\nArgs:\n    ennm: 水库名称，例如：龙羊峡或者龙羊峡水库",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "ennm": {
+                        "description": "水库名称",
+                        "type": "str"
+                    }
+                }
+            },
+            "required": [
+                "ennm"
+            ]
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_water_rain",
+            "description": "根据水库名称和时间查询降水等值线数值，降水量空间分布特征，降雨等值线图等\n水库名称必须在以下列表中：\n['龙羊峡', '刘家峡', '青铜峡', '海勃湾', '万家寨', '龙口', '三门峡', '小浪底', '西霞院', '河口村', '故县', '陆浑', '东平湖']",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "ennm": {
+                        "description": "水库名称",
+                        "type": "str"
+                    },
+                    "startDate": {
+                        "description": "开始时间，%Y-%m-%d 00:00:00",
+                        "type": "str"
+                    },
+                    "endDate": {
+                        "description": "结束时间，%Y-%m-%d 23:59:59",
+                        "type": "str"
+                    }
+                }
+            },
+            "required": [
+                "ennm",
+                "startDate",
+                "endDate"
+            ]
+        }
+    }
+]

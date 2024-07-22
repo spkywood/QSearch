@@ -172,7 +172,9 @@ def get_history_features(
     开始年份和结束年份，例如：2020-2024最高水位，最大出库，最大入库等。
     最近5年的最大水位数据，对应查询时间范围为2020-2024
     最近三年的最大出库流量，对应查询时间范围为2022-2024
-    
+    水库名称必须在以下列表中：
+    ['龙羊峡', '刘家峡', '青铜峡', '海勃湾', '万家寨', '龙口', '三门峡', '小浪底', '西霞院', '河口村', '故县', '陆浑', '东平湖']
+
     Args:
         ennm: 水库名称，例如：龙羊峡或者龙羊峡水库
         start_year: 开始年份，例如：%Y，为空则查询最近5年的数据
@@ -222,6 +224,8 @@ def get_reservoir_characteristics(
     根据水库名称查询水库信息，水库特性等
     水库特性是指描述水库特征和功能的一些关键参数和水位设定，可能包括水库类型与位置、库容与规模、特征水位等参数。
     包括“水库特性”、“水库特征”、“水库信息”、“介绍xx水库”、“水库参数”、“特征水位”、“水库类型”、“水库任务”等关键词
+    水库名称必须在以下列表中：
+    ['龙羊峡', '刘家峡', '青铜峡', '海勃湾', '万家寨', '龙口', '三门峡', '小浪底', '西霞院', '河口村', '故县', '陆浑', '东平湖']
     """
     
     if "水库" in ennm:
@@ -257,6 +261,8 @@ def get_realtime_water_condition(
     根据水库名称和时间查询水库“水情”、“水位”、“流量”、“蓄量”、“蓄水量”等信息
     查询xx水库/地区水情时，调取对应的水位、入库流量、出库流量、蓄量数据，
     例如：龙羊峡水库今天水位为多少，实时水情怎么样？
+    水库名称必须在以下列表中：
+    ['龙羊峡', '刘家峡', '青铜峡', '海勃湾', '万家寨', '龙口', '三门峡', '小浪底', '西霞院', '河口村', '故县', '陆浑', '东平湖']
     
     Args:
         ennm: 水库名称，例如：龙羊峡或者龙羊峡水库
@@ -293,8 +299,7 @@ def get_realtime_water_condition(
     if len(data) == 0:
         raise f"{ennm}水库数据暂未获取"
     
-    logger.info(f"startDate:{type(startDate)} endDate:{type(endDate)}")
-    if startDate is not None and endDate is not None:
+    if startDate != '' and endDate != '':
         dates = [datetime.fromtimestamp(int(d['date']) / 1000) for d in data]
         from bisect import bisect_left, bisect_right
         start = datetime.strptime(startDate, '%Y-%m-%d %H:%M:%S')
@@ -302,7 +307,10 @@ def get_realtime_water_condition(
 
         start_index = bisect_left(dates, start)
         end_index = bisect_right(dates, end)
+        logger.info(f"start_index:{start_index}, end_index:{end_index}")
 
+        if (end_index-start_index) < 1:
+            return data[-7:]
         return data[start_index:end_index]
     else:
         return data[-7:]
@@ -314,6 +322,7 @@ def get_position(
 ):
     """
     根据水库名称查询水库位置，经纬度坐标等
+    例如：龙羊峡水库在哪里？
     
     Args:
         ennm: 水库名称，例如：龙羊峡或者龙羊峡水库
@@ -328,6 +337,8 @@ def get_water_rain(
 ) -> str:
     """
     根据水库名称和时间查询降水等值线数值，降水量空间分布特征，降雨等值线图等
+    水库名称必须在以下列表中：
+    ['龙羊峡', '刘家峡', '青铜峡', '海勃湾', '万家寨', '龙口', '三门峡', '小浪底', '西霞院', '河口村', '故县', '陆浑', '东平湖']
     """
     
     return {

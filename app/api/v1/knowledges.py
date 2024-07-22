@@ -19,7 +19,7 @@ from app.schemas.llm import KnowledgeCreate, GuideCreate
 from app.core.oauth import get_current_user
 from app.controllers.guide import add_guide, query_guides
 from app.controllers.knowledge_base import add_knowledge_base, query_knowledge_base
-
+from app.schemas.llm import QAType
 
 router = APIRouter()
 
@@ -105,19 +105,18 @@ async def get_guides(
         mysql  -> 写入数据库
     """
     guides = await query_guides()
+    rag = [guide.content for guide in guides if guide.qa_type == QAType.RAG]
+    tool = [guide.content for guide in guides if guide.qa_type == QAType.TOOL]
 
-    if (len(guides) > 9):
-         guides = random.sample(guides, 9)
-
+    rag_select = random.sample(rag, min(6, len(rag)))
+    tool_select = random.sample(tool, min(4, len(tool)))
     return BaseResponse(
         code=200,
         msg="success",
-        data=[
-            {
-                "content" : guide.content,
-                "qa_type": guide.qa_type,
-            } for guide in guides
-        ]
+        data = {
+            "RAG": rag_select,
+            "TOOL": tool_select
+        }
     )
 
 

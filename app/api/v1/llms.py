@@ -25,8 +25,9 @@ from app.models.user import User
 from app.models.conversation import Conversation
 from app.core.response import BaseResponse
 from app.schemas.llm import (
-    ChatSession, RAGQuestion, 
-    CoplitRequest, ChatModel,
+    ChatModel, 
+    ChatRequest, 
+    ChatSession, 
 )
 from db.redis_client import redis
 
@@ -79,23 +80,80 @@ async def create_chat(
         }
     )
 
+
+from settings import (
+    QWEN_API_KEY, QWEN_BASE_URL, QWEN_MODEL,
+    CHATGLM_API_KEY, CHATGLM_BASE_URL, CHATGLM_MODEL,
+    DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL
+)
+
+qwen_model = OnlineModel(
+    api_key=QWEN_API_KEY, 
+    base_url= QWEN_BASE_URL,
+    model=QWEN_MODEL
+)
+
+glm_model = OnlineModel(
+    api_key=CHATGLM_API_KEY, 
+    base_url= CHATGLM_BASE_URL,
+    model=CHATGLM_MODEL
+)
+
+
+
 def get_model(request: Request, model: ChatModel) -> OnlineModel:
     if model == ChatModel.CHATGLM:
-        llm_model = request.state.chatglm
+        # llm_model = request.state.chatglm
+        llm_model = glm_model
     else:
-        llm_model = request.state.qwen
+        # llm_model = request.state.qwen
+        llm_model = qwen_model
 
     llm_model = cast(OnlineModel, llm_model)
+    logger.info(f"calling model: {llm_model.model}")
     
     return llm_model
+
+@router.post("/sse/chat/completions", summary="对话接口，流式输出")
+async def chat_with_llm(
+    request: Request,
+    item: ChatRequest,
+    user: User = Depends(get_current_user)
+):
+    llm_model = get_model(request, item.model)
+
+    '''[TODO: 聊天记录]'''
+    redis_name = f'conversation:{user.name}'
+    history = await redis.hget(redis_name, item.conversation)
+    history: List = json.loads(history) if history is not None else []
+
+    messages = [{'role': 'user', 'content': item.question}]
+    history.append({'role': 'user', 'content': item.question})
+
+    resp = llm_model.sse_invoke(messages)
+
+    async def sse_stream():
+        assistant = {"role": "assistant", "content": ""}
+        for delta_content in resp:
+            assistant['content'] += delta_content["content"]
+            yield json.dumps(delta_content, ensure_ascii=False)
+            await asyncio.sleep(0.05)
+
+        '''聊天历史记录保存'''
+        history.append(assistant)
+        await redis.hset(redis_name, item.conversation, json.dumps(history))
+
+    return EventSourceResponse(sse_stream())
+
 
 '''知识库RAG检索问答'''
 @router.post("/sse/chat/knowledge", summary="知识库检索问答RAG，流式输出")
 async def chat_with_knowledge(
     request: Request,
-    item: RAGQuestion,
+    item: ChatRequest,
     user: User = Depends(get_current_user)
 ) -> BaseResponse:
+    logger.info(f"chat with knowledge: {item.conversation} {item.question} {user.name}")
     llm_model = get_model(request, item.model)
     
     '''根据知识库名称获取hash_name'''
@@ -148,6 +206,8 @@ async def chat_with_knowledge(
 
     top = rag.postprocess(item.question, documents)
 
+    content = '\n\n'.join([_t['file_name'] + '\n' + _t['document'] for _t in top[:3]])
+
     '''检索结果写入redis'''
     # 每次提问生成uuid
     uuid_string = f'{item.question}_{time.time()}'
@@ -164,11 +224,11 @@ async def chat_with_knowledge(
     '''检索结果写入redis'''
     await redis.hset(qname, quuid, json.dumps(query_content, indent=4, ensure_ascii=False))
 
-    prompt = knowledge_qa_prompt(top[0]['document'], item.question)
+    prompt = knowledge_qa_prompt(content, item.question)
     '''[TODO: 聊天记录]'''
     redis_name = f'conversation:{user.name}'
     history = await redis.hget(redis_name, item.conversation)
-    history: List = json.loads(history)
+    history: List = json.loads(history) if history is not None else []
 
     messages = [{'role': 'user', 'content': prompt}]
 
@@ -182,7 +242,7 @@ async def chat_with_knowledge(
             assistant['content'] += delta_content["content"]
             delta_content["quuid"] = quuid
             yield json.dumps(delta_content, ensure_ascii=False)
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.05)
 
         '''聊天历史记录保存'''
         history.append(assistant)
@@ -203,28 +263,44 @@ async def get_rag_content(
         return BaseResponse(code=404, msg="服务器内容丢失", data=None)
     return BaseResponse(code=200, msg="success", data=json.loads(context))
 
-
+ennm = ['龙羊峡', '刘家峡', '青铜峡', '海勃湾', '万家寨', '龙口', '三门峡', '小浪底', '西霞院', '河口村', '故县', '陆浑', '东平湖']
+rules = ['降雨', '降水', '等值', '分布特征', '位置', '在哪里', '经纬度']
 
 '''工具调用'''
 @router.post("/sse/chat-tools", summary="软件助手问答", include_in_schema=True)
 async def sse_chat_with_tools(
     request: Request,
-    item: CoplitRequest,
+    item: ChatRequest,
     user: User = Depends(get_current_user)
 ) -> EventSourceResponse:
+    logger.info(f"chat with knowledge: {item.conversation} {item.question} {user.name}")
+
+    # flag = False
+    # for i in ennm:
+    #     if i in item.question:
+    #         flag = True
+    #         break
+
+    # if not flag:
+    #     return BaseResponse(
+    #         code=40000, 
+    #         msg='没有匹配软件助手', 
+    #         data=None
+    #     )
+    
     llm_model = get_model(request, item.model)
 
     messages = [
         {'role': 'system', 'content': '不要假设或猜测传入函数的参数值。如果用户的描述不明确，请要求用户提供必要信息'},
         {'role': 'user', 'content': item.question}
     ]
-
     model_response = llm_model.invoke(messages=messages, tools=tools)
 
+    # logger.info(model_response)
     '''工具未注册，或未能匹配工具'''
     if model_response['tool_calls'] is None:
         return BaseResponse(
-            code=400, 
+            code=40000, 
             msg=model_response['content'], 
             data=None
         )
@@ -244,6 +320,11 @@ async def sse_chat_with_tools(
         fmt = '%Y-%m-%d 00:00:00'
         end_fmt = '%Y-%m-%d 23:59:59'
         kwargs = get_date_range(kwargs, item.question, fmt, end_fmt)
+    if tool_name == 'get_history_features':
+        if "近五年" in item.question or "近5年" in item.question:
+            kwargs.update({'start_year': 2020, 'end_year': 2024})
+        if "历史" in item.question:
+            kwargs.update({'start_year': 2000, 'end_year': 2024})
             
     logger.info(f"{item.question} {tool_name} {kwargs}")
     try:
@@ -252,7 +333,7 @@ async def sse_chat_with_tools(
         logger.error(f'dispatch_tool error:{e}')
         return BaseResponse(
             code=500, 
-            msg=str(e), 
+            msg='服务器内部异常', 
             data=None
         )
 
@@ -278,7 +359,7 @@ async def sse_chat_with_tools(
         def sse_stream():
             for word in words:
                 yield json.dumps({"content": word, "role": "assistant", "tool_calls": None, "quuid": quuid}, ensure_ascii=False) 
-                time.sleep(0.1)
+                time.sleep(0.05)
 
         return EventSourceResponse(sse_stream())
     
@@ -286,13 +367,13 @@ async def sse_chat_with_tools(
     '''根据函数调用结果和用户问题，返回生成回复'''
     question = resp + '\n\n' + item.question
     messages = [
-        {'role': 'system', 'content': '根据问题和函数调用的结果，生成对应回复'},
+        {'role': 'system', 'content': '根据下面函数生成的图表结果，请根据用户问题生成回复，要求回复简洁明了，不要重复用户问题'},
         {'role': 'user', 'content': question},
     ]
 
     redis_name = f'conversation:{user.name}'
     history = await redis.hget(redis_name, item.conversation)
-    history: List = json.loads(history)
+    history: List = json.loads(history) if history is not None else []
     history.append({'role': 'user', 'content': item.question})
 
     resp = llm_model.sse_invoke(messages)
@@ -304,7 +385,7 @@ async def sse_chat_with_tools(
             assistant['content'] += delta_content["content"]
             delta_content["quuid"] = quuid
             yield json.dumps(delta_content, ensure_ascii=False)
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.05)
 
         '''聊天历史记录保存'''
         history.append(assistant)

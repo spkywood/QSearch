@@ -62,5 +62,16 @@ class RAG(metaclass=Singleton):
         top = sorted(scores, key=lambda x: x['score'], reverse=True)
 
         return top
+    
+    def get_source(self, answer: str, background_knowledge: str):
+        bks = [item for bk in background_knowledge.split('\n\n') if bk.strip() for item in bk.split('\n') if item.strip()]
+        sentence_pairs = [(answer, kb) for kb in bks]
+
+        all_scores = self.reranker.compute_score(sentence_pairs, normalize=True)
+
+        # 使用sorted()函数对数组进行排序，并返回一个排序后的数组和对应的索引
+        sorted_scores, sorted_indices = zip(*sorted(zip(all_scores, range(len(all_scores))), reverse=True))
+
+        return bks[sorted_indices[0]] if len(sorted_indices) > 0 else None
 
 rag = RAG()

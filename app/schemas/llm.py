@@ -32,17 +32,22 @@ class ChatSession(BaseModel):
     topic: str = "default"
 
 
-class RAGQuestion(BaseModel):
+# class ChatRequest(BaseModel):
+#     question: str
+#     conversation: str = None
+#     model: ChatModel = ChatModel.CHATGLM
+
+class ChatRequest(BaseModel):
     question: str
     kb_name: str
     conversation: str = None
     model: ChatModel = ChatModel.CHATGLM
     
 
-class CoplitRequest(BaseModel):
-    question: str
-    conversation: str = None
-    model: ChatModel = ChatModel.CHATGLM
+# class CoplitRequest(BaseModel):
+#     question: str
+#     conversation: str = None
+#     model: ChatModel = ChatModel.CHATGLM
 
 
 class GuideCreate(BaseModel):
