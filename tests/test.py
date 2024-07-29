@@ -112,28 +112,23 @@ async def test():
 
     #         f.write(json.dumps(history, indent=4, ensure_ascii=False))
     redis_name = f'conversation:test'
-    history = await redis.hget(redis_name, "d3876997-5836-5e3d-b0e6-6cb6a3643acf")
+    history = await redis.hget(redis_name, "c15f9cdf-c351-5d01-8bde-080de8cf74c2")
     history = json.loads(history)
 
     print(json.dumps(history, indent=4, ensure_ascii=False))
 
 if __name__ == '__main__':
-    # import asyncio
-    # import sys
+    import asyncio
+    import sys
 
-    # if sys.version_info < (3, 10):
-    #     loop = asyncio.get_event_loop()
-    # else:
-    #     try:
-    #         loop = asyncio.get_running_loop()
-    #     except RuntimeError:
-    #         loop = asyncio.new_event_loop()
+    if sys.version_info < (3, 10):
+        loop = asyncio.get_event_loop()
+    else:
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
     
-    # asyncio.set_event_loop(loop)
+    asyncio.set_event_loop(loop)
     
-    # loop.run_until_complete(test())
-    from tools.register import tools
-
-    import json
-    with open('tests/tools.json', 'w') as f:
-        f.write(json.dumps(tools, indent=4, ensure_ascii=False))
+    loop.run_until_complete(test())

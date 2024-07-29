@@ -42,7 +42,11 @@ class ChatRequest(BaseModel):
     kb_name: str
     conversation: str = None
     model: ChatModel = ChatModel.CHATGLM
-    
+    # model: ChatModel = ChatModel.QWEN
+
+class HLContent(BaseModel):
+    quuid: str
+    answer: str
 
 # class CoplitRequest(BaseModel):
 #     question: str

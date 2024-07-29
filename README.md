@@ -70,9 +70,13 @@ python startup.py
 
 - 邮箱：longfellow.wang@gmail.com
 
-## xinference 
+## celery异步任务
 
-# xinference 部署
+```sh
+celery -A celery_app.celery_app worker -P solo --loglevel=info
+```
+
+## xinference 部署
 
 1. 启动xinference
 
@@ -126,3 +130,4 @@ xinference launch --model-name custom-glm4-chat --model-format pytorch --model-e
 
 - [fastapi-best-practices](https://github.com/zhanymkanov/fastapi-best-practices)
 - [fastapi-tips](https://github.com/Kludex/fastapi-tips)
+- [celery和pytorch](https://stackoverflow.com/questions/63645357/using-pytorch-with-celery)

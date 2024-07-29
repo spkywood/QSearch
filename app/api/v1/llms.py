@@ -102,12 +102,15 @@ glm_model = OnlineModel(
 
 
 def get_model(request: Request, model: ChatModel) -> OnlineModel:
+    logger.info(f"model == ChatModel.CHATGLM {model == ChatModel.CHATGLM}")
     if model == ChatModel.CHATGLM:
+        logger.info(f"get model {model}")
         # llm_model = request.state.chatglm
-        llm_model = glm_model
+        return glm_model
     else:
+        logger.info(f"get model {model}")
         # llm_model = request.state.qwen
-        llm_model = qwen_model
+        return qwen_model
 
     llm_model = cast(OnlineModel, llm_model)
     logger.info(f"calling model: {llm_model.model}")
@@ -121,6 +124,7 @@ async def chat_with_llm(
     user: User = Depends(get_current_user)
 ):
     llm_model = get_model(request, item.model)
+    logger.info(f"calling model: {llm_model.model}")
 
     '''[TODO: 聊天记录]'''
     redis_name = f'conversation:{user.name}'
@@ -145,6 +149,10 @@ async def chat_with_llm(
 
     return EventSourceResponse(sse_stream())
 
+from celery_app import highlight_content
+
+async def error_stream(code: int, msg: str):
+    yield json.dumps({"code" : code, "msg" : msg, "data" : None}, ensure_ascii=False)
 
 '''知识库RAG检索问答'''
 @router.post("/sse/chat/knowledge", summary="知识库检索问答RAG，流式输出")
@@ -155,6 +163,7 @@ async def chat_with_knowledge(
 ) -> BaseResponse:
     logger.info(f"chat with knowledge: {item.conversation} {item.question} {user.name}")
     llm_model = get_model(request, item.model)
+    logger.info(f"calling model: {llm_model.model}")
     
     '''根据知识库名称获取hash_name'''
     hash_name = await get_kb_hash_name(item.kb_name, user.id)
@@ -248,6 +257,9 @@ async def chat_with_knowledge(
         history.append(assistant)
         await redis.hset(redis_name, item.conversation, json.dumps(history))
 
+        '''文本高亮'''
+        highlight_content.delay(user.name, quuid, assistant['content'])
+
     return EventSourceResponse(sse_stream())
 
 
@@ -274,40 +286,46 @@ async def sse_chat_with_tools(
     user: User = Depends(get_current_user)
 ) -> EventSourceResponse:
     logger.info(f"chat with knowledge: {item.conversation} {item.question} {user.name}")
-
-    # flag = False
-    # for i in ennm:
-    #     if i in item.question:
-    #         flag = True
-    #         break
-
-    # if not flag:
-    #     return BaseResponse(
-    #         code=40000, 
-    #         msg='没有匹配软件助手', 
-    #         data=None
-    #     )
     
     llm_model = get_model(request, item.model)
+    logger.info(f"calling model: {llm_model.model}")
 
     messages = [
         {'role': 'system', 'content': '不要假设或猜测传入函数的参数值。如果用户的描述不明确，请要求用户提供必要信息'},
         {'role': 'user', 'content': item.question}
     ]
-    model_response = llm_model.invoke(messages=messages, tools=tools)
+    model_response = llm_model.sse_invoke(messages=messages, tools=tools)
 
-    # logger.info(model_response)
-    '''工具未注册，或未能匹配工具'''
-    if model_response['tool_calls'] is None:
+    tool_name = None
+    kwargs = ''
+    for data in model_response:
+        logger.info(f"model response: {data}")
+        if data['content'] is not None and data['content'] != '':
+            logger.info(f'{item.question} 未能找到工具调用 请调用RAG助手')
+            return BaseResponse(
+                code=40000, 
+                msg='工具未注册，或未能匹配工具', 
+                data=None
+            )
+        if data['tool_calls'] is not None:
+            tool_call = data['tool_calls'][0]
+            if tool_call['function']['name']:
+                tool_name = tool_call['function']['name']
+            if tool_call['function']['arguments']:
+                kwargs += tool_call['function']['arguments']
+
+    if tool_name is None:
         return BaseResponse(
             code=40000, 
-            msg=model_response['content'], 
+            msg='工具未注册，或未能匹配工具', 
             data=None
         )
 
-    tool_name = model_response['tool_calls'][0]['function']['name']
-    kwargs = model_response['tool_calls'][0]['function']['arguments']
-    kwargs: Dict = json.loads(kwargs)
+    try:
+        logger.info(f'{item.question} 调用工具 {tool_name} 参数 {kwargs}')
+        kwargs: Dict = json.loads(kwargs) if kwargs != '' else {}
+    except:
+        return BaseResponse(code=40000, msg='参数解析错误', data=None)
 
     '''时间参数模板'''
     from tools.constants import get_date_range

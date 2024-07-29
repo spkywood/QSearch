@@ -331,14 +331,12 @@ def get_position(
 
 @register_tools
 def get_water_rain(
-    ennm: Annotated[str, '水库名称', True],
+    ennm: Annotated[str, '行政区域，最低以支持到区、县', True],
     startDate: Annotated[str, '开始时间，%Y-%m-%d 00:00:00', True] = None,
     endDate: Annotated[str, '结束时间，%Y-%m-%d 23:59:59', True] = None
 ) -> str:
     """
-    根据水库名称和时间查询降水等值线数值，降水量空间分布特征，降雨等值线图等
-    水库名称必须在以下列表中：
-    ['龙羊峡', '刘家峡', '青铜峡', '海勃湾', '万家寨', '龙口', '三门峡', '小浪底', '西霞院', '河口村', '故县', '陆浑', '东平湖']
+    根据行政区域名称和时间查询降水等值线数值，降水量空间分布特征，降雨等值线图等
     """
     
     return {
