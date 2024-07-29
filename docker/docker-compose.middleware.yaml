@@ -1,15 +1,27 @@
 version: '3.1'
 services:
+  postgres:
+    image: postgres:15-alpine
+    restart: always
+    container_name: postgres
+    environment:
+      POSTGRES_PASSWORD: Postgres23456
+      POSTGRES_DB: test
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - ./volumes/postgres/data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
   mysql:
     image: mysql:8.0.30
-    container_name: rag_mysql
+    container_name: mysql
     ports:
       - 3306:3306
     environment:
-      - MYSQL_ROOT_PASSWORD=root#123
+      - MYSQL_ROOT_PASSWORD=Root23456
       - MYSQL_DATABASE=test
-      - MYSQL_USER=rag
-      - MYSQL_PASSWORD=rag#123
+      - MYSQL_USER=admin
+      - MYSQL_PASSWORD=Admin23456
     volumes:
       - ./volumes/mysql/data:/var/lib/mysql
       - /etc/localtime:/etc/localtime:ro
@@ -18,14 +30,14 @@ services:
     restart: always
   minio:
     image: minio/minio:latest
-    container_name: rag_minio
+    container_name: minio
     command: server --console-address ":9001" /data
     ports:
       - 9000:9000
       - 9001:9001
     environment:
       - MINIO_ROOT_USER=admin
-      - MINIO_ROOT_PASSWORD=admin#123
+      - MINIO_ROOT_PASSWORD=Admin#1234
       - TZ=Asia/Shanghai
     volumes:
       - ./volumes/minio/data:/data
@@ -35,13 +47,13 @@ services:
     restart: always
   redis:
     image: redis:6-alpine
-    container_name: rag_redis
+    container_name: redis
     ports:
       - "6379:6379"
     volumes:
       - ./volumes/redis/data:/data
       - /etc/localtime:/etc/localtime:ro
-    command: redis-server --requirepass qsearch123
+    command: redis-server --requirepass Redis23456
     networks:
       - rag
     restart: always
@@ -66,7 +78,7 @@ services:
     restart: always
   milvus:
     image: milvusdb/milvus:v2.4.1
-    container_name: rag_milvus
+    container_name: milvus
     command: milvus run standalone  1> /dev/null
     security_opt:
       - seccomp:unconfined
