@@ -18,7 +18,7 @@ from datetime import timedelta, datetime, timezone
 from app.models.user import User
 from captcha.image import ImageCaptcha
 from fastapi import APIRouter, HTTPException, status, Request
-
+from logger import logger
 
 from db.redis_client import redis
 from app.core.response import BaseResponse
@@ -31,6 +31,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 15
 @router.get("/captcha")
 async def get_captcha() -> BaseResponse:
     captcha_text = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
+    logger.info(f"captcha_text: {captcha_text}")
     captcha_id = ''.join(random.choices(string.ascii_lowercase + string.digits, k=16))
     await redis.setex(captcha_id, 120, captcha_text)  # Captcha valid for 2 minutes
     image = ImageCaptcha().generate_image(captcha_text) 

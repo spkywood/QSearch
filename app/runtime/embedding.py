@@ -69,3 +69,11 @@ class Embedding:
         sentence_embeddings = torch.nn.functional.normalize(sentence_embeddings, p=2, dim=1)
 
         return sentence_embeddings
+
+    @torch.no_grad()
+    def embed(self,
+        sentence: str,
+        batch_size: int = 12,
+        max_length: int = 1024,
+    ):
+        return self.encode([sentence], batch_size, max_length)[0]

@@ -47,6 +47,9 @@ MODEL_PATH = os.getenv("MODEL_PATH")
 
 APP_HOST = os.getenv("APP_HOST")
 
+WAVE_HOST = os.getenv("WAVE_HOST")
+WAVE_PORT = os.getenv("WAVE_PORT")
+
 # ES
 ES_HOST = os.getenv("ES_HOST")
 ES_PORT = os.getenv("ES_PORT")

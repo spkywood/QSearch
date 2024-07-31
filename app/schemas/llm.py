@@ -13,6 +13,15 @@
 from enum import Enum
 from pydantic import BaseModel, Field
 
+
+class AudioRequest(BaseModel):
+    text: str = Field(..., description="需要语音合成的文本")
+    temperature: int = Field(0.3, min=0.00001, max=1, description="Audio temperature")
+    top_P: int = Field(0.7, min=0.1, max=0.9, description="top_P")
+    top_K: int = Field(20, min=1, max=20, description="top_K")
+    audio_seed: int = Field(42, min=0, max=100000000, description="audio_seed")
+    text_seed: int = Field(42, min=0, max=100000000, description="text_seed")
+
 class QAType(Enum):
     LLM = "LLM"
     RAG = "RAG"

@@ -1,6 +1,7 @@
 # local demo
 demo/data/
 demo/download*
+temp/
 
 # docker volumes
 docker/volumes
